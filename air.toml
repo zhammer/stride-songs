@@ -1,0 +1,11 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/main ./src/cmd/server"
+bin = "tmp/main"
+include_ext = ["go"]
+include_dir = ["src/"]
+
+[misc]
+clean_on_exit = true
