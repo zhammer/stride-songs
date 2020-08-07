@@ -27,12 +27,10 @@ export default function App() {
       <Text style={tailwind("text-2xl pt-5")}>
         {range(5).map((i) => ((ticks + i) % 5 ? "🎵" : "🏃🏽‍♀️"))}
       </Text>
-      <Text style={tailwind("text-gray-600 text-2xl pt-5")}>
+      <Text style={tailwind("text-gray-600 text-2xl p-5")}>
         Sync your runs to your favorite Spotify songs.
       </Text>
-      <View style={tailwind("p-12 text-4xl")}>
-        <Button title="Login with Spotify" onPress={handleLoginButtonPressed} />
-      </View>
+      <Button title="Login with Spotify" onPress={handleLoginButtonPressed} />
     </View>
   );
 }
