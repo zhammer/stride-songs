@@ -10,7 +10,9 @@ import (
 )
 
 type Config struct {
-	Port int `envconfig:"port" default:"5000"`
+	SpotifyClientID     string `envconfig:"spotify_client_id" required:"true"`
+	SpotifyClientSecret string `envconfig:"spotofy_client_secret" required:"true"`
+	Port                int    `envconfig:"port" default:"5000"`
 }
 
 func main() {

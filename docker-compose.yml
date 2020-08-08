@@ -41,5 +41,7 @@ services:
       - "5000:5000"
     environment:
       PORT: 5000
+      SPOTIFY_CLIENT_ID: abc
+      SPOTIFY_CLIENT_SECRET: def
 volumes:
   db_data:
