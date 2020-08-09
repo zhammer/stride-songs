@@ -1,0 +1,1 @@
+CREATE TABLE "public"."users"("id" serial NOT NULL, "spotify_user_id" text NOT NULL, "spotify_refresh_token" text NOT NULL, "created_at" timestamptz NOT NULL DEFAULT now(), PRIMARY KEY ("id") , UNIQUE ("spotify_user_id"));
