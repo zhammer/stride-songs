@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Text, View, Button, Alert } from "react-native";
+import * as Linking from "expo-linking";
 import tailwind from "tailwind-rn";
 
 function range(count: number): number[] {
@@ -31,6 +32,7 @@ export default function App() {
         Sync your runs to your favorite Spotify songs.
       </Text>
       <Button title="Login with Spotify" onPress={handleLoginButtonPressed} />
+      <Text>auth redirect url: {Linking.makeUrl()}</Text>
     </View>
   );
 }
