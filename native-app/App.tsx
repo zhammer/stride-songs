@@ -11,7 +11,7 @@ function range(count: number): number[] {
 }
 
 export default function App() {
-  let [runnerPos] = useCountCycle(NUM_RUN_EMOJIS, 1e3, { tickFunction: decr });
+  let [runnerPos] = useCountCycle(NUM_RUN_EMOJIS, { tickFunction: decr });
 
   function handleLoginButtonPressed() {
     Alert.alert("huzzah!");
