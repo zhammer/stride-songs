@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Text, View, Button, Alert } from "react-native";
 import * as Linking from "expo-linking";
 import tailwind from "tailwind-rn";

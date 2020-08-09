@@ -30,7 +30,12 @@ function useCountCycle(size: number, options: Options = {}): [number] {
   let opts = { ...defaultOptions(), ...options };
   let [ticks, setTicks] = useState(0);
   useInterval(() => setTicks(opts.tickFunction), opts.interval);
-  return [ticks % size];
+
+  let pos = ticks % size;
+  if (pos < 0) {
+    pos = pos + size;
+  }
+  return [pos];
 }
 
 export default useCountCycle;
