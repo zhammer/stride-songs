@@ -23,8 +23,8 @@ services:
       HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/postgres
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-      WORKFLOW_EXECUTION_INSERTED_WEBHOOK_URL: "http://deli:9090/hasura_event_triggers/workflow_execution_inserted"
-      REMOTE_SCHEMA_URL_RESOLVER_SERVICE: "http://resolver-service:7070/query"
+
+      ACTION_BASE_URL: "http://stride-songs:5000/hasura/actions"
       ## uncomment next line to set an admin secret
       # HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
   stride-songs:
@@ -43,5 +43,7 @@ services:
       PORT: 5000
       SPOTIFY_CLIENT_ID: abc
       SPOTIFY_CLIENT_SECRET: def
+      SPOTIFY_REDIRECT_URI: "exp://127.0.0.1:19000/auth"
+      JWT_SIGNING_KEY: abc
 volumes:
   db_data:

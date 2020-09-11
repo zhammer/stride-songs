@@ -1,2 +1,17 @@
+type Mutation {
+  Login (
+    inp: LoginInput!
+  ): LoginOutput!
+}
 
+
+
+
+input LoginInput {
+  spotifyRefreshToken : String!
+}
+
+type LoginOutput {
+  accessToken : String!
+}
 
