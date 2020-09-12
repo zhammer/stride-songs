@@ -17,6 +17,7 @@ type Client struct {
 	clientID     string
 	clientSecret string
 	redirectURI  string
+	httpClient   http.Client
 }
 
 func (c *Client) WithRefreshTokenAuth(ctx context.Context, refreshToken string) (context.Context, error) {
@@ -31,7 +32,7 @@ func (c *Client) WithRefreshTokenAuth(ctx context.Context, refreshToken string) 
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(c.clientID, c.clientSecret)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (c *Client) Auth(ctx context.Context, authorizationCode string) (*AuthRespo
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(c.clientID, c.clientSecret)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func (c *Client) Me(ctx context.Context) (*User, error) {
 	}
 	req.Header.Add("authorization", "Bearer "+accessToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
