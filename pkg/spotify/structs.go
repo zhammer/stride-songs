@@ -7,3 +7,7 @@ type AuthResponse struct {
 	ExpiresIn    int    `json:"expires_int"`
 	RefreshToken string `json:"refresh_token"`
 }
+
+type User struct {
+	ID string `json:"id"`
+}

@@ -106,5 +106,29 @@ func main() {
 		}
 	})
 
+	http.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
+		refreshToken := r.URL.Query().Get("refresh_token")
+		if refreshToken == "" {
+			http.Error(w, "expected 'refresh_token' param", http.StatusBadRequest)
+			return
+		}
+
+		ctx, err := spotifyClient.WithRefreshTokenAuth(r.Context(), refreshToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		me, err := spotifyClient.Me(ctx)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := tmpl.ExecuteTemplate(w, "authed.html", me); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
 	http.ListenAndServe(net.JoinHostPort("", strconv.Itoa(cfg.Port)), nil)
 }
