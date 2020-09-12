@@ -3,16 +3,16 @@ package main
 import (
 	"encoding/json"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/kelseyhightower/envconfig"
+
+	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
 type Config struct {
@@ -57,6 +57,15 @@ func main() {
 		},
 	}).ParseGlob("templates/*.html"))
 
+	spotifyClient, err := spotify.NewClient(
+		spotify.WithClientID(cfg.SpotifyClientID),
+		spotify.WithClientSecret(cfg.SpotifyClientSecret),
+		spotify.WithRedirectURI(cfg.RedirectURI),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		indexPage := IndexPage{
 			SpotifyClientID: cfg.SpotifyClientID,
@@ -86,33 +95,8 @@ func main() {
 			return
 		}
 
-		values := url.Values{
-			"grant_type":   []string{"authorization_code"},
-			"code":         []string{code},
-			"redirect_uri": []string{cfg.RedirectURI},
-		}
-		encoded := values.Encode()
-		req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(encoded))
+		auth, err := spotifyClient.Auth(r.Context(), code)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		req.Header.Add("content-type", "application/x-www-form-urlencoded")
-		req.SetBasicAuth(cfg.SpotifyClientID, cfg.SpotifyClientSecret)
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			body, _ := ioutil.ReadAll(resp.Body)
-			http.Error(w, string(body), http.StatusInternalServerError)
-		}
-
-		auth := SpotifyAuthResponse{}
-		if err := json.NewDecoder(resp.Body).Decode(&auth); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

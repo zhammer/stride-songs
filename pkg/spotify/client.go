@@ -1,0 +1,74 @@
+package spotify
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+)
+
+type ClientOption func(c *Client)
+
+type Client struct {
+	clientID     string
+	clientSecret string
+	redirectURI  string
+}
+
+func (c *Client) Auth(ctx context.Context, authorizationCode string) (*AuthResponse, error) {
+	values := url.Values{
+		"grant_type":   []string{"authorization_code"},
+		"code":         []string{authorizationCode},
+		"redirect_uri": []string{c.redirectURI},
+	}
+	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(values.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(c.clientID, c.clientSecret)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
+	}
+
+	auth := AuthResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&auth); err != nil {
+		return nil, err
+	}
+
+	return &auth, nil
+}
+
+func WithClientID(clientID string) ClientOption {
+	return func(c *Client) {
+		c.clientID = clientID
+	}
+}
+
+func WithClientSecret(clientSecret string) ClientOption {
+	return func(c *Client) {
+		c.clientSecret = clientSecret
+	}
+}
+
+func WithRedirectURI(redirectURI string) ClientOption {
+	return func(c *Client) {
+		c.redirectURI = redirectURI
+	}
+}
+
+func NewClient(opts ...ClientOption) (*Client, error) {
+	client := &Client{}
+	for _, opt := range opts {
+		opt(client)
+	}
+	return client, nil
+}
