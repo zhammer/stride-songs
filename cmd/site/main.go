@@ -12,6 +12,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/kelseyhightower/envconfig"
 
+	"github.com/zhammer/stride-songs/internal/app"
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
@@ -62,6 +63,10 @@ func main() {
 		spotify.WithClientSecret(cfg.SpotifyClientSecret),
 		spotify.WithRedirectURI(cfg.RedirectURI),
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	strideSongs, err := app.NewStrideSongs(app.WithSpotify(spotifyClient))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,6 +131,30 @@ func main() {
 		}
 
 		if err := tmpl.ExecuteTemplate(w, "authed.html", me); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	http.HandleFunc("/tracks", func(w http.ResponseWriter, r *http.Request) {
+		refreshToken := r.URL.Query().Get("refresh_token")
+		if refreshToken == "" {
+			http.Error(w, "expected 'refresh_token' param", http.StatusBadRequest)
+			return
+		}
+
+		ctx, err := spotifyClient.WithRefreshTokenAuth(r.Context(), refreshToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		tracks, err := strideSongs.GeneratePlaylists(ctx, refreshToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := tmpl.ExecuteTemplate(w, "authed.html", tracks); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})

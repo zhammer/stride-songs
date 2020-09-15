@@ -7,6 +7,10 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/zhammer/stride-songs/pkg/chunk"
+
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 const base = "https://api.spotify.com/v1"
@@ -17,7 +21,7 @@ type Client struct {
 	clientID     string
 	clientSecret string
 	redirectURI  string
-	httpClient   http.Client
+	httpClient   *http.Client
 }
 
 func (c *Client) WithRefreshTokenAuth(ctx context.Context, refreshToken string) (context.Context, error) {
@@ -80,6 +84,98 @@ func (c *Client) Auth(ctx context.Context, authorizationCode string) (*AuthRespo
 	return &auth, nil
 }
 
+// https://developer.spotify.com/documentation/web-api/reference/library/get-users-saved-tracks/
+func (c *Client) AllUserTracks(ctx context.Context) ([]Track, error) {
+	accessToken, ok := userAccessToken(ctx)
+	if !ok {
+		return nil, fmt.Errorf("must use context with accessToken")
+	}
+
+	var tracks []Track
+	nextPage := base + "/me/tracks?limit=50&offset=0"
+
+	for nextPage != "" {
+		req, err := http.NewRequest("GET", nextPage, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("authorization", "Bearer "+accessToken)
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
+		}
+
+		data := struct {
+			Items []struct {
+				Track Track `json:"track"`
+			} `json:"items"`
+			Next string `json:"next"`
+		}{}
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, err
+		}
+
+		for _, item := range data.Items {
+			tracks = append(tracks, item.Track)
+		}
+
+		nextPage = data.Next
+	}
+
+	return tracks, nil
+}
+
+func (c *Client) AnalyzedTracks(ctx context.Context, tracks []Track) ([]AnalyzedTrack, error) {
+	// note: this doesn't technically have to use user's auth
+	accessToken, ok := userAccessToken(ctx)
+	if !ok {
+		return nil, fmt.Errorf("must use context with accessToken")
+	}
+
+	var analyzedTracks []AnalyzedTrack
+	for _, trackRange := range chunk.Ranges(len(tracks), 100) {
+		trackChunk := tracks[trackRange.Start:trackRange.End]
+		ids := []string{}
+		for _, track := range trackChunk {
+			ids = append(ids, track.ID)
+		}
+
+		url := base + "/audio-features?ids=" + strings.Join(ids, ",")
+		req, err := http.NewRequest("GET", url, nil)
+
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("authorization", "Bearer "+accessToken)
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
+		}
+
+		data := struct {
+			AudioFeatures []AnalyzedTrack `json:"audio_features"`
+		}{}
+
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, err
+		}
+
+		analyzedTracks = append(analyzedTracks, data.AudioFeatures...)
+	}
+
+	return analyzedTracks, nil
+}
+
 func (c *Client) Me(ctx context.Context) (*User, error) {
 	accessToken, ok := userAccessToken(ctx)
 	if !ok {
@@ -128,7 +224,9 @@ func WithRedirectURI(redirectURI string) ClientOption {
 }
 
 func NewClient(opts ...ClientOption) (*Client, error) {
-	client := &Client{}
+	client := &Client{
+		httpClient: retryablehttp.NewClient().StandardClient(),
+	}
 	for _, opt := range opts {
 		opt(client)
 	}

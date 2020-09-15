@@ -11,3 +11,12 @@ type AuthResponse struct {
 type User struct {
 	ID string `json:"id"`
 }
+
+type Track struct {
+	ID string `json:"id"`
+}
+
+type AnalyzedTrack struct {
+	Track
+	Tempo float64 `json:"tempo"`
+}
