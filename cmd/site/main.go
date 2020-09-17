@@ -29,14 +29,6 @@ type IndexPage struct {
 	Scopes          []string
 }
 
-type SpotifyAuthResponse struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	Scope        string `json:"scope"`
-	ExpiresIn    int    `json:"expires_int"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 func (i IndexPage) Scope() string {
 	return strings.Join(i.Scopes, " ")
 }
