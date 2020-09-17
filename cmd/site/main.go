@@ -17,10 +17,11 @@ import (
 )
 
 type Config struct {
-	Port                int    `default:"3000"`
-	RedirectURI         string `default:"http://127.0.0.1:3000/callback"`
-	SpotifyClientID     string `envconfig:"spotify_client_id" required:"true"`
-	SpotifyClientSecret string `envconfig:"spotify_client_secret" required:"true"`
+	Port                    int    `default:"3000"`
+	RedirectURI             string `default:"http://127.0.0.1:3000/callback"`
+	SpotifyClientID         string `envconfig:"spotify_client_id" required:"true"`
+	SpotifyClientSecret     string `envconfig:"spotify_client_secret" required:"true"`
+	StrideSongsRefreshToken string `envconfig:"stride_songs_refresh_token" required:"true"`
 }
 
 type IndexPage struct {
@@ -54,6 +55,7 @@ func main() {
 		spotify.WithClientID(cfg.SpotifyClientID),
 		spotify.WithClientSecret(cfg.SpotifyClientSecret),
 		spotify.WithRedirectURI(cfg.RedirectURI),
+		spotify.WithStrideSongsRefreshToken(cfg.StrideSongsRefreshToken),
 	)
 	if err != nil {
 		log.Fatal(err)

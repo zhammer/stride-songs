@@ -1,3 +1,17 @@
 - table:
     schema: public
+    name: library_sync_statuses
+  is_enum: true
+- table:
+    schema: public
+    name: playlist_track_statuses
+  is_enum: true
+- table:
+    schema: public
+    name: playlist_tracks
+- table:
+    schema: public
+    name: playlists
+- table:
+    schema: public
     name: users
