@@ -118,7 +118,7 @@ func main() {
 			return
 		}
 
-		ctx, err := spotifyClient.WithRefreshTokenAuth(r.Context(), refreshToken)
+		ctx, err := spotifyClient.WithUserAccessToken(r.Context(), refreshToken)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -142,7 +142,7 @@ func main() {
 			return
 		}
 
-		ctx, err := spotifyClient.WithRefreshTokenAuth(r.Context(), refreshToken)
+		ctx, err := spotifyClient.WithUserAccessToken(r.Context(), refreshToken)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

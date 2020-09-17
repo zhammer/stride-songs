@@ -13,7 +13,7 @@ type StrideSongs struct {
 }
 
 func (s *StrideSongs) GeneratePlaylists(ctx context.Context, refreshToken string) ([]SPMPlaylist, error) {
-	ctx, err := s.spotify.WithRefreshTokenAuth(ctx, refreshToken)
+	ctx, err := s.spotify.WithUserAccessToken(ctx, refreshToken)
 	if err != nil {
 		return nil, err
 	}

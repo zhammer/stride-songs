@@ -9,7 +9,8 @@ func (c contextKey) String() string {
 }
 
 var (
-	contextKeyUserAccessToken = contextKey("user-access-token")
+	contextKeyUserAccessToken        = contextKey("user-access-token")
+	contextKeyStrideSongsAccessToken = contextKey("stride-songs-access-token")
 )
 
 func withUserAccessToken(ctx context.Context, accessToken string) context.Context {
@@ -18,5 +19,14 @@ func withUserAccessToken(ctx context.Context, accessToken string) context.Contex
 
 func userAccessToken(ctx context.Context) (string, bool) {
 	val, ok := ctx.Value(contextKeyUserAccessToken).(string)
+	return val, ok
+}
+
+func withStrideSongsAccessToken(ctx context.Context, accessToken string) context.Context {
+	return context.WithValue(ctx, contextKeyStrideSongsAccessToken, accessToken)
+}
+
+func strideSongsAccessToken(ctx context.Context) (string, bool) {
+	val, ok := ctx.Value(contextKeyStrideSongsAccessToken).(string)
 	return val, ok
 }

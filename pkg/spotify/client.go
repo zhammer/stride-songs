@@ -18,13 +18,14 @@ const base = "https://api.spotify.com/v1"
 type ClientOption func(c *Client)
 
 type Client struct {
-	clientID     string
-	clientSecret string
-	redirectURI  string
-	httpClient   *http.Client
+	clientID                string
+	clientSecret            string
+	redirectURI             string
+	httpClient              *http.Client
+	strideSongsRefreshToken string
 }
 
-func (c *Client) WithRefreshTokenAuth(ctx context.Context, refreshToken string) (context.Context, error) {
+func (c *Client) refreshTokenAuth(ctx context.Context, refreshToken string) (*AuthResponse, error) {
 	values := url.Values{
 		"grant_type":    []string{"refresh_token"},
 		"refresh_token": []string{refreshToken},
@@ -47,6 +48,28 @@ func (c *Client) WithRefreshTokenAuth(ctx context.Context, refreshToken string) 
 
 	auth := AuthResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&auth); err != nil {
+		return nil, err
+	}
+
+	return &auth, nil
+}
+
+// note: at some point it may make more sense to have a goroutine that fetches
+// a new access token whenever the previous access token expires, and use that
+// kept-fresh access token for all requests across the Client.
+func (c *Client) WithStrideSongsAccessToken(ctx context.Context) (context.Context, error) {
+	auth, err := c.refreshTokenAuth(ctx, c.strideSongsRefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = withStrideSongsAccessToken(ctx, auth.AccessToken)
+	return ctx, nil
+}
+
+func (c *Client) WithUserAccessToken(ctx context.Context, refreshToken string) (context.Context, error) {
+	auth, err := c.refreshTokenAuth(ctx, refreshToken)
+	if err != nil {
 		return nil, err
 	}
 
@@ -220,6 +243,12 @@ func WithClientSecret(clientSecret string) ClientOption {
 func WithRedirectURI(redirectURI string) ClientOption {
 	return func(c *Client) {
 		c.redirectURI = redirectURI
+	}
+}
+
+func WithStrideSongsRefreshToken(refreshToken string) ClientOption {
+	return func(c *Client) {
+		c.strideSongsRefreshToken = refreshToken
 	}
 }
 
