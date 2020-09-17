@@ -12,7 +12,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/kelseyhightower/envconfig"
 
-	"github.com/zhammer/stride-songs/internal/app"
+	"github.com/zhammer/stride-songs/internal"
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
@@ -60,7 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	strideSongs, err := app.NewStrideSongs(app.WithSpotify(spotifyClient))
+	strideSongs, err := internal.NewStrideSongs(internal.WithSpotify(spotifyClient))
 	if err != nil {
 		log.Fatal(err)
 	}
