@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net"
@@ -9,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-pg/pg/v10"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/kelseyhightower/envconfig"
 
@@ -19,6 +22,7 @@ import (
 type Config struct {
 	Port                    int    `default:"3000"`
 	RedirectURI             string `default:"http://127.0.0.1:3000/callback"`
+	DatabaseURL             string `envconfig:"database_url" required:"true"`
 	SpotifyClientID         string `envconfig:"spotify_client_id" required:"true"`
 	SpotifyClientSecret     string `envconfig:"spotify_client_secret" required:"true"`
 	StrideSongsRefreshToken string `envconfig:"stride_songs_refresh_token" required:"true"`
@@ -35,6 +39,8 @@ func (i IndexPage) Scope() string {
 }
 
 func main() {
+	ctx := context.Background()
+
 	cfg := Config{}
 	err := envconfig.Process("", &cfg)
 	if err != nil {
@@ -60,7 +66,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	strideSongs, err := internal.NewStrideSongs(internal.WithSpotify(spotifyClient))
+
+	opt, err := pg.ParseURL(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db := pg.Connect(opt)
+	if err := db.Ping(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	strideSongs, err := internal.NewStrideSongs(
+		internal.WithSpotify(spotifyClient),
+		internal.WithDB(db),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -129,27 +149,27 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/tracks", func(w http.ResponseWriter, r *http.Request) {
-		refreshToken := r.URL.Query().Get("refresh_token")
-		if refreshToken == "" {
-			http.Error(w, "expected 'refresh_token' param", http.StatusBadRequest)
+	http.HandleFunc("/api/event_triggers/library_sync", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		ctx, err := spotifyClient.WithUserAccessToken(r.Context(), refreshToken)
-		if err != nil {
+		old := internal.User{}
+		new := internal.User{}
+		data := EventTriggerPayload{}
+		data.Event.Data.New = &new
+		data.Event.Data.Old = &old
+
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		tracks, err := strideSongs.GeneratePlaylists(ctx, refreshToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		fmt.Printf("%+v\n", new)
 
-		if err := tmpl.ExecuteTemplate(w, "authed.html", tracks); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err := strideSongs.LibrarySyncMachine().HandleStateUpdate(r.Context(), old, new); err != nil {
+			fmt.Println(err)
 		}
 	})
 

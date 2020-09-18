@@ -1,8 +1,7 @@
 package internal
 
 import (
-	"context"
-
+	"github.com/go-pg/pg/v10"
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
@@ -10,32 +9,22 @@ type StrideSongsOption func(s *StrideSongs)
 
 type StrideSongs struct {
 	spotify *spotify.Client
+	db      *pg.DB
 }
 
-func (s *StrideSongs) GeneratePlaylists(ctx context.Context, refreshToken string) ([]SPMPlaylist, error) {
-	ctx, err := s.spotify.WithUserAccessToken(ctx, refreshToken)
-	if err != nil {
-		return nil, err
-	}
-
-	userTracks, err := s.spotify.AllUserTracks(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	analyzedTracks, err := s.spotify.AnalyzedTracks(ctx, userTracks)
-	if err != nil {
-		return nil, err
-	}
-
-	playlists := groupPlaylists(analyzedTracks)
-
-	return playlists, nil
+func (s *StrideSongs) LibrarySyncMachine() *LibrarySyncMachine {
+	return &LibrarySyncMachine{s}
 }
 
 func WithSpotify(spotify *spotify.Client) StrideSongsOption {
 	return func(s *StrideSongs) {
 		s.spotify = spotify
+	}
+}
+
+func WithDB(db *pg.DB) StrideSongsOption {
+	return func(s *StrideSongs) {
+		s.db = db
 	}
 }
 

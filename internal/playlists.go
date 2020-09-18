@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"math"
 	"sync"
 
@@ -26,26 +27,39 @@ var spms = []int{
 	200,
 }
 
-func groupPlaylists(tracks []spotify.AnalyzedTrack) []SPMPlaylist {
-	playlists := make([]SPMPlaylist, len(spms))
-	for i, spm := range spms {
-		playlists[i] = SPMPlaylist{SPM: spm}
-	}
+func spread(list []interface{}) []interface{} {
+	return list
+}
 
+func createInitialPlaylists(user User) []Playlist {
+	playlists := make([]Playlist, len(spms))
+	for i, spm := range spms {
+		playlists[i] = Playlist{
+			SPM:       spm,
+			UserID:    user.ID,
+			SpotifyID: fmt.Sprintf("TODO-%d", spm),
+		}
+	}
+	return playlists
+}
+
+func groupTracks(playlists []Playlist, tracks []spotify.AnalyzedTrack) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(playlists))
 	for i := range playlists {
-		go func(playlist *SPMPlaylist) {
+		go func(playlist *Playlist) {
 			for _, track := range tracks {
 				// track's tempo must be close to the playlist's SPM
 				if math.Abs(float64(playlist.SPM)-track.Tempo) < 1 {
-					playlist.Tracks = append(playlist.Tracks, track)
+					playlist.Tracks = append(playlist.Tracks, PlaylistTrack{
+						PlaylistID: playlist.ID,
+						SpotifyID:  track.ID,
+						Status:     playlistTrackStatusPendingAdd,
+					})
 				}
 			}
 			wg.Done()
 		}(&playlists[i])
 	}
 	wg.Wait()
-
-	return playlists
 }

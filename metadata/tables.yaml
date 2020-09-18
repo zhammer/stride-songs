@@ -15,3 +15,15 @@
 - table:
     schema: public
     name: users
+  event_triggers:
+  - name: library_sync
+    definition:
+      enable_manual: false
+      update:
+        columns:
+        - library_sync_status
+    retry_conf:
+      num_retries: 0
+      interval_sec: 10
+      timeout_sec: 180
+    webhook_from_env: EVENT_TRIGGER_LIBRARY_SYNC
