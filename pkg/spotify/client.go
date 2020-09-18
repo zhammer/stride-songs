@@ -1,9 +1,11 @@
 package spotify
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -226,6 +228,51 @@ func (c *Client) Me(ctx context.Context) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func (c *Client) CreatePlaylist(ctx context.Context, inp CreatePlaylistRequest, opts ...requestConfigOption) (*Playlist, error) {
+	cfg := c.requestConfig(opts)
+	accessToken, ok := cfg.accessTokenGetter(ctx)
+	if !ok {
+		return nil, fmt.Errorf("must use context with accessToken")
+	}
+
+	buffer := &bytes.Buffer{}
+	if err := json.NewEncoder(buffer).Encode(&inp); err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/users/%s/playlists", base, inp.UserID), buffer)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("authorization", "Bearer "+accessToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if !(resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated) {
+		body, _ := ioutil.ReadAll(resp.Body)
+		fmt.Printf(string(body))
+		return nil, fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
+	}
+
+	playlist := Playlist{}
+	if err := json.NewDecoder(resp.Body).Decode(&playlist); err != nil {
+		return nil, err
+	}
+
+	return &playlist, nil
+}
+
+func (c *Client) requestConfig(opts []requestConfigOption) requestConfig {
+	cfg := defaultRequestOptions()
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return cfg
 }
 
 func WithClientID(clientID string) ClientOption {

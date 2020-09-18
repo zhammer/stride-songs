@@ -8,8 +8,9 @@ import (
 type StrideSongsOption func(s *StrideSongs)
 
 type StrideSongs struct {
-	spotify *spotify.Client
-	db      *pg.DB
+	spotify                  *spotify.Client
+	db                       *pg.DB
+	strideSongsSpotifyUserID string
 }
 
 func (s *StrideSongs) LibrarySyncMachine() *LibrarySyncMachine {
@@ -25,6 +26,12 @@ func WithSpotify(spotify *spotify.Client) StrideSongsOption {
 func WithDB(db *pg.DB) StrideSongsOption {
 	return func(s *StrideSongs) {
 		s.db = db
+	}
+}
+
+func WithStrideSongsSpotifyUserID(id string) StrideSongsOption {
+	return func(s *StrideSongs) {
+		s.strideSongsSpotifyUserID = id
 	}
 }
 

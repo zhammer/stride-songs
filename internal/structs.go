@@ -1,11 +1,17 @@
 package internal
 
+import "fmt"
+
 type Playlist struct {
 	ID        int
 	SPM       int `json:"spm"`
 	UserID    int
 	SpotifyID string
 	Tracks    []PlaylistTrack `pg:"rel:has-many"`
+}
+
+func (p *Playlist) Name() string {
+	return fmt.Sprintf("%dspm - Stride Songs", p.SPM)
 }
 
 type playlistTrackStatus string

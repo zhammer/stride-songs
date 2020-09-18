@@ -26,6 +26,7 @@ type Config struct {
 	SpotifyClientID         string `envconfig:"spotify_client_id" required:"true"`
 	SpotifyClientSecret     string `envconfig:"spotify_client_secret" required:"true"`
 	StrideSongsRefreshToken string `envconfig:"stride_songs_refresh_token" required:"true"`
+	StrideSongsUserID       string `envconfig:"stride_songs_user_id" required:"true"`
 }
 
 type IndexPage struct {
@@ -80,6 +81,7 @@ func main() {
 	strideSongs, err := internal.NewStrideSongs(
 		internal.WithSpotify(spotifyClient),
 		internal.WithDB(db),
+		internal.WithStrideSongsSpotifyUserID(cfg.StrideSongsUserID),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -93,6 +95,7 @@ func main() {
 				"user-read-playback-state",
 				"user-modify-playback-state",
 				"playlist-modify-public",
+				"playlist-modify-private",
 				"user-library-read",
 			},
 		}
@@ -165,8 +168,6 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		fmt.Printf("%+v\n", new)
 
 		if err := strideSongs.LibrarySyncMachine().HandleStateUpdate(r.Context(), old, new); err != nil {
 			fmt.Println(err)

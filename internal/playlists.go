@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"math"
 	"sync"
 
@@ -35,9 +34,8 @@ func createInitialPlaylists(user User) []Playlist {
 	playlists := make([]Playlist, len(spms))
 	for i, spm := range spms {
 		playlists[i] = Playlist{
-			SPM:       spm,
-			UserID:    user.ID,
-			SpotifyID: fmt.Sprintf("TODO-%d", spm),
+			SPM:    spm,
+			UserID: user.ID,
 		}
 	}
 	return playlists

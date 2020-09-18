@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
 type librarySyncStatus string
@@ -39,8 +40,35 @@ func (sm *LibrarySyncMachine) HandleStateUpdate(ctx context.Context, old User, n
 }
 
 func (sm *LibrarySyncMachine) createPlaylists(ctx context.Context, old User, new User) error {
+	ctx, err := sm.spotify.WithUserAccessToken(ctx, new.SpotifyRefreshToken)
+	if err != nil {
+		return err
+	}
+
+	ctx, err = sm.spotify.WithStrideSongsAccessToken(ctx)
+	if err != nil {
+		return err
+	}
+
+	playlists := createInitialPlaylists(new)
+
+	for i := range playlists {
+		playlist := &playlists[i]
+		inp := spotify.CreatePlaylistRequest{
+			Name:          playlist.Name(),
+			Public:        false,
+			Collaborative: false,
+			UserID:        sm.strideSongsSpotifyUserID,
+		}
+		spotifyPlaylist, err := sm.spotify.CreatePlaylist(ctx, inp, spotify.WithStrideSongsAccessToken())
+		if err != nil {
+			return err
+		}
+
+		playlist.SpotifyID = spotifyPlaylist.ID
+	}
+
 	if err := sm.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		playlists := createInitialPlaylists(new)
 
 		if _, err := tx.Model(&playlists).Insert(); err != nil {
 			return err
@@ -106,5 +134,5 @@ func (sm *LibrarySyncMachine) scanLibrary(ctx context.Context, old User, new Use
 }
 
 func (sm *LibrarySyncMachine) addTracks(ctx context.Context, old User, new User) error {
-	return NotImplementedError
+	return ErrNotImplemented
 }
