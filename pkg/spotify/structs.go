@@ -52,3 +52,12 @@ type CreatePlaylistRequest struct {
 type Playlist struct {
 	ID string `json:"id"`
 }
+
+type AddTracksToPlaylistRequest struct {
+	PlaylistID string
+	Tracks     []Track
+}
+
+type addTracksToPlaylistRequest struct {
+	URIs []string `json:"uris"`
+}

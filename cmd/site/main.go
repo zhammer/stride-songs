@@ -169,6 +169,7 @@ func main() {
 			return
 		}
 
+		fmt.Println(old.LibrarySyncStatus + " -> " + new.LibrarySyncStatus)
 		if err := strideSongs.LibrarySyncMachine().HandleStateUpdate(r.Context(), old, new); err != nil {
 			fmt.Println(err)
 		}

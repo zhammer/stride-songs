@@ -134,5 +134,52 @@ func (sm *LibrarySyncMachine) scanLibrary(ctx context.Context, old User, new Use
 }
 
 func (sm *LibrarySyncMachine) addTracks(ctx context.Context, old User, new User) error {
-	return ErrNotImplemented
+	var playlists []Playlist
+	if err := sm.db.Model(&playlists).
+		Where("user_id = ?", new.ID).
+		Relation("Tracks", withWhere("status = ?", playlistTrackStatusPendingAdd)).
+		Select(); err != nil {
+		return err
+	}
+
+	ctx, err := sm.spotify.WithStrideSongsAccessToken(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, playlist := range playlists {
+		request := spotify.AddTracksToPlaylistRequest{
+			PlaylistID: playlist.SpotifyID,
+			Tracks:     toSpotifyTracks(playlist.Tracks),
+		}
+		if err := sm.spotify.AddTracksToPlaylist(ctx, request, spotify.WithStrideSongsAccessToken()); err != nil {
+			return err
+		}
+	}
+
+	err = sm.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		for _, playlist := range playlists {
+			_, err := tx.Model(&playlist.Tracks).Set("status = ?", playlistTrackStatusAdded).Update()
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func toSpotifyTracks(tracks []PlaylistTrack) []spotify.Track {
+	spotifyTracks := make([]spotify.Track, len(tracks))
+
+	for i, track := range tracks {
+		spotifyTracks[i] = spotify.Track{ID: track.SpotifyID}
+	}
+
+	return spotifyTracks
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -254,8 +253,6 @@ func (c *Client) CreatePlaylist(ctx context.Context, inp CreatePlaylistRequest, 
 	}
 
 	if !(resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated) {
-		body, _ := ioutil.ReadAll(resp.Body)
-		fmt.Printf(string(body))
 		return nil, fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
 	}
 
@@ -265,6 +262,63 @@ func (c *Client) CreatePlaylist(ctx context.Context, inp CreatePlaylistRequest, 
 	}
 
 	return &playlist, nil
+}
+
+func (c *Client) AddTracksToPlaylist(ctx context.Context, inp AddTracksToPlaylistRequest, opts ...requestConfigOption) error {
+	cfg := c.requestConfig(opts)
+	accessToken, ok := cfg.accessTokenGetter(ctx)
+	if !ok {
+		return fmt.Errorf("must use context with accessToken")
+	}
+
+	// need to break up the original request input into several requests
+	requests := makeAddTracksToPlaylistRequests(inp)
+	for _, request := range requests {
+		buffer := &bytes.Buffer{}
+		if err := json.NewEncoder(buffer).Encode(&request); err != nil {
+			return err
+		}
+
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/playlists/%s/tracks", base, inp.PlaylistID), buffer)
+		if err != nil {
+			return err
+		}
+		req.Header.Add("authorization", "Bearer "+accessToken)
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode != http.StatusCreated {
+			return fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
+		}
+	}
+
+	return nil
+}
+
+func makeAddTracksToPlaylistRequests(inp AddTracksToPlaylistRequest) []addTracksToPlaylistRequest {
+	// A maximum of 100 items can be added in one request.
+	ranges := chunk.Ranges(len(inp.Tracks), 100)
+	requests := make([]addTracksToPlaylistRequest, len(ranges))
+	for i, trackRange := range ranges {
+		tracks := inp.Tracks[trackRange.Start:trackRange.End]
+
+		requests[i] = addTracksToPlaylistRequest{
+			URIs: trackURIs(tracks),
+		}
+	}
+
+	return requests
+}
+
+func trackURIs(tracks []Track) []string {
+	uris := make([]string, len(tracks))
+	for i, track := range tracks {
+		uris[i] = "spotify:track:" + track.ID
+	}
+	return uris
 }
 
 func (c *Client) requestConfig(opts []requestConfigOption) requestConfig {
