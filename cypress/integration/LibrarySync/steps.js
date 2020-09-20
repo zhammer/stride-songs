@@ -5,7 +5,7 @@ import { Given, Then, When } from "cypress-cucumber-preprocessor/steps";
 const HASURA_URL = "http://127.0.0.1:8080/v1/graphql";
 
 beforeEach(() => {
-  // todo: clear db
+  cy.exec("grift db:clear");
 });
 
 Given("the following users exist", async (table) => {
