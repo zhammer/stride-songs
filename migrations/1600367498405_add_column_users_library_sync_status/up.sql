@@ -15,7 +15,7 @@ CREATE OR REPLACE FUNCTION initiate_library_sync()
     $func$ LANGUAGE 'plpgsql';
 
 CREATE TRIGGER trigger_refresh_token_added
-    AFTER UPDATE ON users
+    BEFORE UPDATE ON users
     FOR EACH ROW
     WHEN (OLD.spotify_refresh_token IS NULL AND NEW.spotify_refresh_token IS NOT NULL)
     EXECUTE PROCEDURE initiate_library_sync();
