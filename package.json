@@ -7,8 +7,7 @@
   "license": "MIT",
   "devDependencies": {
     "cypress": "^5.2.0",
-    "cypress-cucumber-preprocessor": "^2.5.5",
-    "graphql-request": "^3.1.0"
+    "cypress-cucumber-preprocessor": "^2.5.5"
   },
   "cypress-cucumber-preprocessor": {
     "nonGlobalStepDefinitions": true

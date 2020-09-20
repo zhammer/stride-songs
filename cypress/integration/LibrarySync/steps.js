@@ -1,7 +1,6 @@
 /* global cy */
 /// <reference types="cypress" />
 import { Given, Then, When } from "cypress-cucumber-preprocessor/steps";
-import { request, gql } from "graphql-request";
 
 const HASURA_URL = "http://127.0.0.1:8080/v1/graphql";
 
@@ -10,7 +9,7 @@ beforeEach(() => {
 });
 
 Given("the following users exist", async (table) => {
-  let query = gql`
+  let query = `
     mutation AddUsers($users: [users_insert_input!]!) {
       insert_users(objects: $users) {
         affected_rows
@@ -18,15 +17,22 @@ Given("the following users exist", async (table) => {
     }
   `;
   let users = table.hashes();
-  let response = await request(HASURA_URL, query, {
-    users,
-  });
+  cy.request("POST", HASURA_URL, { query, variables: { users } }).then(
+    (response) => {
+      expect(response.body).to.not.have.property("errors");
+    }
+  );
 });
+
+Given(
+  `the following spotify tracks exist in {string} library`,
+  (userId, table) => {}
+);
 
 When(
   `I add refresh token {string} to user {int}`,
   async (refreshToken, userId) => {
-    let query = gql`
+    let query = `
       mutation AddRefreshToken($userId: Int!, $refreshToken: String!) {
         update_users_by_pk(
           pk_columns: { id: $userId }
@@ -36,7 +42,13 @@ When(
         }
       }
     `;
-    let response = await request(HASURA_URL, query, { refreshToken, userId });
+
+    cy.request("POST", HASURA_URL, {
+      query,
+      variables: { refreshToken, userId },
+    }).then((response) => {
+      expect(response.body).to.not.have.property("errors");
+    });
   }
 );
 

@@ -2,8 +2,8 @@ Feature: Library Sync
 
     Background:
         Given the following users exist
-            | id | refresh_token | library_sync_status   |
-            | 1  |               | pending_refresh_token |
+            | id | spotify_refresh_token | library_sync_status   |
+            | 1  |                       | pending_refresh_token |
 
     Scenario: I sync my spotify library with stride songs
 
