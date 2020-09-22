@@ -3,12 +3,14 @@
 import { Given, Then, When } from "cypress-cucumber-preprocessor/steps";
 
 const HASURA_URL = "http://127.0.0.1:8080/v1/graphql";
+const SPOTIFY_URL = "http://127.0.0.1:7000";
 
 beforeEach(() => {
   cy.exec("grift db:clear");
+  cy.request("POST", SPOTIFY_URL + "/_test/clear");
 });
 
-Given("the following users exist", async (table) => {
+Given("the following users exist", (table) => {
   let query = `
     mutation AddUsers($users: [users_insert_input!]!) {
       insert_users(objects: $users) {
@@ -24,9 +26,23 @@ Given("the following users exist", async (table) => {
   );
 });
 
+Given("the following spotify users exist", (table) => {
+  let users = table.hashes();
+  cy.request("PUT", SPOTIFY_URL + "/_test/users", { users });
+});
+
 Given(
   `the following spotify tracks exist in {string} library`,
-  (userId, table) => {}
+  (userID, table) => {
+    let tracks = table.hashes().map((row) => ({
+      ...row,
+      tempo: parseFloat(row.tempo),
+    }));
+    cy.request("PUT", SPOTIFY_URL + "/_test/user_tracks", {
+      user_id: userID,
+      tracks,
+    });
+  }
 );
 
 When(

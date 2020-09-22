@@ -50,7 +50,8 @@ type CreatePlaylistRequest struct {
 }
 
 type Playlist struct {
-	ID string `json:"id"`
+	ID   string `json:"id"`
+	Name string `json:"string"`
 }
 
 type AddTracksToPlaylistRequest struct {

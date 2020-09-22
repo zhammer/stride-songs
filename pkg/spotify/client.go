@@ -14,8 +14,6 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 )
 
-const base = "https://api.spotify.com/v1"
-
 type ClientOption func(c *Client)
 
 type Client struct {
@@ -24,6 +22,9 @@ type Client struct {
 	redirectURI             string
 	httpClient              *http.Client
 	strideSongsRefreshToken string
+
+	base     string
+	authBase string
 }
 
 func (c *Client) refreshTokenAuth(ctx context.Context, refreshToken string) (*AuthResponse, error) {
@@ -31,7 +32,7 @@ func (c *Client) refreshTokenAuth(ctx context.Context, refreshToken string) (*Au
 		"grant_type":    []string{"refresh_token"},
 		"refresh_token": []string{refreshToken},
 	}
-	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(values.Encode()))
+	req, err := http.NewRequest("POST", c.authBase+"/api/token", strings.NewReader(values.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func (c *Client) Auth(ctx context.Context, authorizationCode string) (*AuthRespo
 		"code":         []string{authorizationCode},
 		"redirect_uri": []string{c.redirectURI},
 	}
-	req, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(values.Encode()))
+	req, err := http.NewRequest("POST", c.authBase+"/api/token", strings.NewReader(values.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +117,7 @@ func (c *Client) AllUserTracks(ctx context.Context) ([]Track, error) {
 	}
 
 	var tracks []Track
-	nextPage := base + "/me/tracks?limit=50&offset=0"
+	nextPage := c.base + "/v1/me/tracks?limit=50&offset=0"
 
 	for nextPage != "" {
 		req, err := http.NewRequest("GET", nextPage, nil)
@@ -169,7 +170,7 @@ func (c *Client) AnalyzedTracks(ctx context.Context, tracks []Track) ([]Analyzed
 			ids = append(ids, track.ID)
 		}
 
-		url := base + "/audio-features?ids=" + strings.Join(ids, ",")
+		url := c.base + "/v1/audio-features?ids=" + strings.Join(ids, ",")
 		req, err := http.NewRequest("GET", url, nil)
 
 		if err != nil {
@@ -206,7 +207,7 @@ func (c *Client) Me(ctx context.Context) (*User, error) {
 		return nil, fmt.Errorf("must use context with accessToken")
 	}
 
-	req, err := http.NewRequest("GET", base+"/me", nil)
+	req, err := http.NewRequest("GET", c.base+"/v1/me", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +242,7 @@ func (c *Client) CreatePlaylist(ctx context.Context, inp CreatePlaylistRequest, 
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/users/%s/playlists", base, inp.UserID), buffer)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/users/%s/playlists", c.base, inp.UserID), buffer)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +280,7 @@ func (c *Client) AddTracksToPlaylist(ctx context.Context, inp AddTracksToPlaylis
 			return err
 		}
 
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/playlists/%s/tracks", base, inp.PlaylistID), buffer)
+		req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/playlists/%s/tracks", c.base, inp.PlaylistID), buffer)
 		if err != nil {
 			return err
 		}
@@ -353,9 +354,25 @@ func WithStrideSongsRefreshToken(refreshToken string) ClientOption {
 	}
 }
 
+func WithBaseUrl(baseURL string) ClientOption {
+	fmt.Println("WithBaseUrl should only be used in development environments!")
+	return func(c *Client) {
+		c.base = baseURL
+	}
+}
+
+func WithBaseAuthUrl(baseAuthURL string) ClientOption {
+	fmt.Println("WithBaseAuthUrl should only be used in development environments!")
+	return func(c *Client) {
+		c.authBase = baseAuthURL
+	}
+}
+
 func NewClient(opts ...ClientOption) (*Client, error) {
 	client := &Client{
 		httpClient: retryablehttp.NewClient().StandardClient(),
+		base:       "https://api.spotify.com",
+		authBase:   "https://accounts.spotify.com",
 	}
 	for _, opt := range opts {
 		opt(client)

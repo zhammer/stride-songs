@@ -27,6 +27,8 @@ type Config struct {
 	SpotifyClientSecret     string `envconfig:"spotify_client_secret" required:"true"`
 	StrideSongsRefreshToken string `envconfig:"stride_songs_refresh_token" required:"true"`
 	StrideSongsUserID       string `envconfig:"stride_songs_user_id" required:"true"`
+
+	SpotifyOverrideURL string `envconfig:"spotify_override_url"`
 }
 
 type IndexPage struct {
@@ -58,12 +60,19 @@ func main() {
 		},
 	}).ParseGlob("templates/*.html"))
 
-	spotifyClient, err := spotify.NewClient(
+	spotifyOptions := []spotify.ClientOption{
 		spotify.WithClientID(cfg.SpotifyClientID),
 		spotify.WithClientSecret(cfg.SpotifyClientSecret),
 		spotify.WithRedirectURI(cfg.RedirectURI),
 		spotify.WithStrideSongsRefreshToken(cfg.StrideSongsRefreshToken),
-	)
+	}
+	if cfg.SpotifyOverrideURL != "" {
+		spotifyOptions = append(spotifyOptions,
+			spotify.WithBaseUrl(cfg.SpotifyOverrideURL),
+			spotify.WithBaseAuthUrl(cfg.SpotifyOverrideURL),
+		)
+	}
+	spotifyClient, err := spotify.NewClient(spotifyOptions...)
 	if err != nil {
 		log.Fatal(err)
 	}
