@@ -114,6 +114,9 @@ func (sm *LibrarySyncMachine) scanLibrary(ctx context.Context, old User, new Use
 
 	if err := sm.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		for _, playlist := range playlists {
+			if len(playlist.Tracks) == 0 {
+				continue
+			}
 			if _, err := tx.Model(&playlist.Tracks).Insert(); err != nil {
 				return err
 			}
@@ -159,8 +162,18 @@ func (sm *LibrarySyncMachine) addTracks(ctx context.Context, old User, new User)
 
 	err = sm.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 		for _, playlist := range playlists {
+			if len(playlist.Tracks) == 0 {
+				continue
+			}
 			_, err := tx.Model(&playlist.Tracks).Set("status = ?", playlistTrackStatusAdded).Update()
 			if err != nil {
+				return err
+			}
+
+			if _, err := tx.Model(&new).
+				Set("library_sync_status = ?", librarySyncStatusSucceeded).
+				Where("id = ?id").
+				Update(); err != nil {
 				return err
 			}
 		}
