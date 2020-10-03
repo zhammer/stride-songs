@@ -18,12 +18,23 @@ import (
 type Playlist struct {
 	ID string `json:"id"`
 	spotify.CreatePlaylistRequest
+	Tracks []spotify.AnalyzedTrack
 }
 
 type User struct {
 	ID        string `json:"id"`
 	Playlists []Playlist
 	Tracks    []spotify.AnalyzedTrack
+}
+
+func (u *User) Playlist(playlistID string) (*Playlist, bool) {
+	for i := range u.Playlists {
+		playlist := &u.Playlists[i]
+		if playlist.ID == playlistID {
+			return playlist, true
+		}
+	}
+	return nil, false
 }
 
 type State struct {
@@ -87,6 +98,113 @@ func main() {
 			return
 		}
 	}).Methods("POST")
+
+	mux.HandleFunc("/v1/me/tracks", func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("Authorization")[7:]
+		parts := strings.Split(token, ":")
+		userID := parts[0]
+
+		user, ok := state.User(userID)
+		if !ok {
+			fmt.Println("missing user " + userID)
+			http.Error(w, "user not found", http.StatusInternalServerError)
+			return
+		}
+
+		type Item struct {
+			Track spotify.AnalyzedTrack `json:"track"`
+		}
+		var data struct {
+			Items []Item `json:"items"`
+		}
+		for _, track := range user.Tracks {
+			data.Items = append(data.Items, Item{track})
+		}
+
+		if err := json.NewEncoder(w).Encode(&data); err != nil {
+			fmt.Println(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
+	mux.HandleFunc("/v1/audio-features", func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("Authorization")[7:]
+		parts := strings.Split(token, ":")
+		userID := parts[0]
+
+		_, ok := state.User(userID)
+		if !ok {
+			fmt.Println("missing user " + userID)
+			http.Error(w, "user not found", http.StatusInternalServerError)
+			return
+		}
+
+		var data struct {
+			AudioFeatures []spotify.AnalyzedTrack `json:"audio_features"`
+		}
+
+		idList := strings.Split(r.URL.Query().Get("ids"), ",")
+		ids := make(map[string]bool, len(idList))
+		for _, id := range idList {
+			ids[id] = true
+		}
+
+		for _, track := range state.Tracks {
+			if _, ok := ids[track.ID]; ok {
+				data.AudioFeatures = append(data.AudioFeatures, track)
+			}
+		}
+
+		if err := json.NewEncoder(w).Encode(&data); err != nil {
+			fmt.Println(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
+	mux.HandleFunc("/v1/playlists/{playlistID}/tracks", func(w http.ResponseWriter, r *http.Request) {
+		playlistID := gmux.Vars(r)["playlistID"]
+
+		token := r.Header.Get("Authorization")[7:]
+		parts := strings.Split(token, ":")
+		userID := parts[0]
+		user, ok := state.User(userID)
+		if !ok {
+			fmt.Println("missing user " + userID)
+			http.Error(w, "user not found", http.StatusInternalServerError)
+			return
+		}
+
+		playlist, ok := user.Playlist(playlistID)
+		if !ok {
+			fmt.Println("can't find playlist " + playlistID)
+			http.Error(w, "can't find playlist", http.StatusInternalServerError)
+			return
+		}
+
+		var data struct {
+			URIs []string `json:"uris"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			fmt.Println(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		tracks := make([]spotify.AnalyzedTrack, len(data.URIs))
+		for i, uri := range data.URIs {
+			id := strings.Split(uri, ":")[2]
+			for _, track := range user.Tracks {
+				if track.ID == id {
+					tracks[i] = track
+				}
+			}
+		}
+
+		playlist.Tracks = append(playlist.Tracks, tracks...)
+		w.WriteHeader(http.StatusCreated)
+	})
 
 	/*
 	 * AUTH ROUTES
