@@ -68,7 +68,34 @@ When(
   }
 );
 
-Then(`the following playlists exist for user {int}`, async (userID) => {});
+Then(`the following playlists exist for user {int}`, (id, table) => {
+  let expected = table.hashes();
+  let query = `
+  query UserPlaylists($id: Int!) {
+      users_by_pk(id: $id) {
+        playlists {
+          spm
+          playlist_tracks {
+            spotify_id
+          }
+        }
+      }
+    }
+  `;
+
+  cy.wrap("").should(() => {
+    cy.request("POST", HASURA_URL, {
+      query,
+      variables: { id },
+    }).then((response) => {
+      console.log(response);
+      expect(response.body).to.not.have.property("errors");
+      expect(
+        response.body.data.users_by_pk.playlists
+      ).to.have.length.greaterThan(0);
+    });
+  });
+});
 
 Then(
   `the following spotify playlists exist for user {string}`,

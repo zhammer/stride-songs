@@ -19,7 +19,7 @@ Feature: Library Sync
             | d  | 160    |
             | e  | 160.25 |
         When I add refresh token "zach:refresh-token" to user 1
-        And the following playlists exist for user 1
+        Then the following playlists exist for user 1
             | spm | tracks |
             | 125 |        |
             | 130 |        |
