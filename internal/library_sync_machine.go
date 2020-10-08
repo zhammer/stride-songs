@@ -11,11 +11,11 @@ import (
 type librarySyncStatus string
 
 const (
-	librarySyncStatusPendingRefreshToken = librarySyncStatus("pending_refresh_token")
-	librarySyncStatusCreatingPlaylists   = librarySyncStatus("creating_playlists")
-	librarySyncStatusScanningLibrary     = librarySyncStatus("scanning_library")
-	librarySyncStatusAddingTracks        = librarySyncStatus("adding_tracks")
-	librarySyncStatusSucceeded           = librarySyncStatus("succeeded")
+	LibrarySyncStatusPendingRefreshToken = librarySyncStatus("pending_refresh_token")
+	LibrarySyncStatusCreatingPlaylists   = librarySyncStatus("creating_playlists")
+	LibrarySyncStatusScanningLibrary     = librarySyncStatus("scanning_library")
+	LibrarySyncStatusAddingTracks        = librarySyncStatus("adding_tracks")
+	LibrarySyncStatusSucceeded           = librarySyncStatus("succeeded")
 )
 
 type LibrarySyncMachine struct {
@@ -24,15 +24,15 @@ type LibrarySyncMachine struct {
 
 func (sm *LibrarySyncMachine) HandleStateUpdate(ctx context.Context, old User, new User) error {
 	switch new.LibrarySyncStatus {
-	case librarySyncStatusPendingRefreshToken:
+	case LibrarySyncStatusPendingRefreshToken:
 		return nil
-	case librarySyncStatusCreatingPlaylists:
+	case LibrarySyncStatusCreatingPlaylists:
 		return sm.createPlaylists(ctx, old, new)
-	case librarySyncStatusScanningLibrary:
+	case LibrarySyncStatusScanningLibrary:
 		return sm.scanLibrary(ctx, old, new)
-	case librarySyncStatusAddingTracks:
+	case LibrarySyncStatusAddingTracks:
 		return sm.addTracks(ctx, old, new)
-	case librarySyncStatusSucceeded:
+	case LibrarySyncStatusSucceeded:
 		return nil
 	default:
 		return fmt.Errorf("unrecognized library sync status: %s", new.LibrarySyncStatus)
@@ -75,7 +75,7 @@ func (sm *LibrarySyncMachine) createPlaylists(ctx context.Context, old User, new
 		}
 
 		if _, err := tx.Model(&new).
-			Set("library_sync_status = ?", librarySyncStatusScanningLibrary).
+			Set("library_sync_status = ?", LibrarySyncStatusScanningLibrary).
 			Where("id = ?id").
 			Update(); err != nil {
 			return err
@@ -123,7 +123,7 @@ func (sm *LibrarySyncMachine) scanLibrary(ctx context.Context, old User, new Use
 		}
 
 		if _, err := tx.Model(&new).
-			Set("library_sync_status = ?", librarySyncStatusAddingTracks).
+			Set("library_sync_status = ?", LibrarySyncStatusAddingTracks).
 			Where("id = ?id").
 			Update(); err != nil {
 			return err
@@ -169,13 +169,13 @@ func (sm *LibrarySyncMachine) addTracks(ctx context.Context, old User, new User)
 			if err != nil {
 				return err
 			}
+		}
 
-			if _, err := tx.Model(&new).
-				Set("library_sync_status = ?", librarySyncStatusSucceeded).
-				Where("id = ?id").
-				Update(); err != nil {
-				return err
-			}
+		if _, err := tx.Model(&new).
+			Set("library_sync_status = ?", LibrarySyncStatusSucceeded).
+			Where("id = ?id").
+			Update(); err != nil {
+			return err
 		}
 
 		return nil

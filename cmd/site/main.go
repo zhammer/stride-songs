@@ -28,6 +28,7 @@ type Config struct {
 	StrideSongsRefreshToken string `envconfig:"stride_songs_refresh_token" required:"true"`
 	StrideSongsUserID       string `envconfig:"stride_songs_user_id" required:"true"`
 
+	// test only
 	SpotifyOverrideURL string `envconfig:"spotify_override_url"`
 }
 
@@ -42,13 +43,18 @@ func (i IndexPage) Scope() string {
 }
 
 func main() {
-	ctx := context.Background()
-
 	cfg := Config{}
 	err := envconfig.Process("", &cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	mux := makeServer(cfg)
+	http.ListenAndServe(net.JoinHostPort("", strconv.Itoa(cfg.Port)), mux)
+}
+
+func makeServer(cfg Config) http.Handler {
+	mux := http.NewServeMux()
 
 	tmpl := template.Must(template.New("views").Funcs(template.FuncMap{
 		"jsonPretty": func(data interface{}) (string, error) {
@@ -83,7 +89,7 @@ func main() {
 	}
 
 	db := pg.Connect(opt)
-	if err := db.Ping(ctx); err != nil {
+	if err := db.Ping(context.Background()); err != nil {
 		log.Fatal(err)
 	}
 
@@ -96,7 +102,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		indexPage := IndexPage{
 			SpotifyClientID: cfg.SpotifyClientID,
 			RedirectURI:     cfg.RedirectURI,
@@ -113,7 +119,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()
 		if errorMessage := params.Get("error"); errorMessage != "" {
 			http.Error(w, errorMessage, http.StatusInternalServerError)
@@ -137,7 +143,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
 		refreshToken := r.URL.Query().Get("refresh_token")
 		if refreshToken == "" {
 			http.Error(w, "expected 'refresh_token' param", http.StatusBadRequest)
@@ -161,7 +167,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/api/event_triggers/library_sync", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/event_triggers/library_sync", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -184,5 +190,5 @@ func main() {
 		}
 	})
 
-	http.ListenAndServe(net.JoinHostPort("", strconv.Itoa(cfg.Port)), nil)
+	return mux
 }

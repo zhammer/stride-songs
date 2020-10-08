@@ -1,33 +1,28 @@
-package main
+package spotify
 
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"net"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
 	gmux "github.com/gorilla/mux"
-	"github.com/kelseyhightower/envconfig"
-	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
-type Playlist struct {
+type mockPlaylist struct {
 	ID string `json:"id"`
-	spotify.CreatePlaylistRequest
-	Tracks []spotify.AnalyzedTrack
+	CreatePlaylistRequest
+	Tracks []AnalyzedTrack
 }
 
-type User struct {
+type mockUser struct {
 	ID        string `json:"id"`
-	Playlists []Playlist
-	Tracks    []spotify.AnalyzedTrack
+	Playlists []mockPlaylist
+	Tracks    []AnalyzedTrack
 }
 
-func (u *User) Playlist(playlistID string) (*Playlist, bool) {
+func (u *mockUser) Playlist(playlistID string) (*mockPlaylist, bool) {
 	for i := range u.Playlists {
 		playlist := &u.Playlists[i]
 		if playlist.ID == playlistID {
@@ -37,12 +32,12 @@ func (u *User) Playlist(playlistID string) (*Playlist, bool) {
 	return nil, false
 }
 
-type State struct {
-	Tracks []spotify.AnalyzedTrack
-	Users  []User
+type mockSpotify struct {
+	Tracks []AnalyzedTrack
+	Users  []mockUser
 }
 
-func (s *State) User(userID string) (*User, bool) {
+func (s *mockSpotify) User(userID string) (*mockUser, bool) {
 	for i := range s.Users {
 		user := &s.Users[i]
 		if user.ID == userID {
@@ -53,40 +48,41 @@ func (s *State) User(userID string) (*User, bool) {
 	return nil, false
 }
 
-type Config struct {
-	Port int `default:"7000"`
+func (s *mockSpotify) AddUser(userID string) {
+	s.Users = append(s.Users, mockUser{ID: userID})
 }
 
-func main() {
-	cfg := Config{}
-	err := envconfig.Process("", &cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
+func (s *mockSpotify) Clear() {
+	s = &mockSpotify{}
+}
 
-	state := State{}
+func (s *mockSpotify) Mux() http.Handler {
 	mux := gmux.NewRouter()
+
+	mux.HandleFunc("/_status", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("OK!\n"))
+	})
 
 	/*
 	 * API ROUTES
 	 */
 	mux.HandleFunc("/v1/users/{userID}/playlists", func(w http.ResponseWriter, r *http.Request) {
 		userID := gmux.Vars(r)["userID"]
-		user, ok := state.User(userID)
+		user, ok := s.User(userID)
 		if !ok {
 			fmt.Println("missing user " + userID)
 			http.Error(w, "user not found", http.StatusInternalServerError)
 			return
 		}
 
-		data := spotify.CreatePlaylistRequest{}
+		data := CreatePlaylistRequest{}
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			fmt.Println(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		playlist := Playlist{
+		playlist := mockPlaylist{
 			ID:                    uuid.New().String(),
 			CreatePlaylistRequest: data,
 		}
@@ -104,7 +100,7 @@ func main() {
 		parts := strings.Split(token, ":")
 		userID := parts[0]
 
-		user, ok := state.User(userID)
+		user, ok := s.User(userID)
 		if !ok {
 			fmt.Println("missing user " + userID)
 			http.Error(w, "user not found", http.StatusInternalServerError)
@@ -112,7 +108,7 @@ func main() {
 		}
 
 		type Item struct {
-			Track spotify.AnalyzedTrack `json:"track"`
+			Track AnalyzedTrack `json:"track"`
 		}
 		var data struct {
 			Items []Item `json:"items"`
@@ -133,7 +129,7 @@ func main() {
 		parts := strings.Split(token, ":")
 		userID := parts[0]
 
-		_, ok := state.User(userID)
+		_, ok := s.User(userID)
 		if !ok {
 			fmt.Println("missing user " + userID)
 			http.Error(w, "user not found", http.StatusInternalServerError)
@@ -141,7 +137,7 @@ func main() {
 		}
 
 		var data struct {
-			AudioFeatures []spotify.AnalyzedTrack `json:"audio_features"`
+			AudioFeatures []AnalyzedTrack `json:"audio_features"`
 		}
 
 		idList := strings.Split(r.URL.Query().Get("ids"), ",")
@@ -150,7 +146,7 @@ func main() {
 			ids[id] = true
 		}
 
-		for _, track := range state.Tracks {
+		for _, track := range s.Tracks {
 			if _, ok := ids[track.ID]; ok {
 				data.AudioFeatures = append(data.AudioFeatures, track)
 			}
@@ -169,7 +165,7 @@ func main() {
 		token := r.Header.Get("Authorization")[7:]
 		parts := strings.Split(token, ":")
 		userID := parts[0]
-		user, ok := state.User(userID)
+		user, ok := s.User(userID)
 		if !ok {
 			fmt.Println("missing user " + userID)
 			http.Error(w, "user not found", http.StatusInternalServerError)
@@ -183,16 +179,14 @@ func main() {
 			return
 		}
 
-		var data struct {
-			URIs []string `json:"uris"`
-		}
+		var data addTracksToPlaylistRequest
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			fmt.Println(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		tracks := make([]spotify.AnalyzedTrack, len(data.URIs))
+		tracks := make([]AnalyzedTrack, len(data.URIs))
 		for i, uri := range data.URIs {
 			id := strings.Split(uri, ":")[2]
 			for _, track := range user.Tracks {
@@ -224,14 +218,14 @@ func main() {
 		}
 
 		userID := parts[0]
-		user, ok := state.User(userID)
+		user, ok := s.User(userID)
 		if !ok {
 			fmt.Println("missing user " + userID)
 			http.Error(w, "user not found", http.StatusInternalServerError)
 			return
 		}
 
-		data := spotify.AuthResponse{
+		data := AuthResponse{
 			AccessToken: user.ID + ":" + "access-token",
 		}
 		if err := json.NewEncoder(w).Encode(&data); err != nil {
@@ -241,5 +235,9 @@ func main() {
 		}
 	})
 
-	http.ListenAndServe(net.JoinHostPort("", strconv.Itoa(cfg.Port)), mux)
+	return mux
+}
+
+func NewMockSpotify() *mockSpotify {
+	return &mockSpotify{}
 }

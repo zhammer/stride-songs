@@ -1,6 +1,7 @@
 #!/bin/bash
 
-if [ $1 == "restart" ]; then
+if [ "$1" == "reset" ]; then
+    echo "resetting db..."
     docker-compose down -v
 fi
 
