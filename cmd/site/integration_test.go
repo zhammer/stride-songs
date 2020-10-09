@@ -214,12 +214,14 @@ func TestLibrarySync(t *testing.T) {
 		cuke.given().theFollowSpotifyUsersExist([]string{strideSongs})
 	}
 
-	t.Run("happy path", func(t *testing.T) {
+	// note: at the moment cuke doesn't take the new `t *testing.T` on a t.Run...
+	// i'm not sure at the moment since we only have one test so for now i'm
+	// gonna leave it.
+	t.Run("user syncs their library with stride songs", func(t *testing.T) {
 		cuke.beforeEach()
 
 		background()
 
-		// todo: stridesongs user should always exist
 		cuke.given().theFollowSpotifyUsersExist([]string{zach})
 		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey, cheatCode, marilyn, ifYouCall})
 		cuke.and().theSpotifyUserHasTheFollowingTracks(zach, []string{bebey.ID, cheatCode.ID, marilyn.ID, ifYouCall.ID})
