@@ -3,3 +3,5 @@ version: "3.6"
 services:
   stridesongs:
     env_file: .env.test
+    extra_hosts:
+      - "host=host.docker.internal:host-gateway"
