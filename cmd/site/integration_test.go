@@ -127,9 +127,7 @@ func (t *tester) and() *tester {
 func TestLibrarySync(t *testing.T) {
 	tester := tester{}
 	after, err := tester.before()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	assert.NoError(t, err)
 	defer after()
 
 	t.Run("happy path", func(t *testing.T) {
