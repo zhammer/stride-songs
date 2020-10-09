@@ -15,134 +15,157 @@ import (
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
-type tester struct {
+type cuke struct {
 	mockSpotify       *spotify.MockSpotify
 	mockSpotifyServer *httptest.Server
 	db                *pg.DB
+	t                 *testing.T
 }
 
-func (t *tester) before() (func(), error) {
+func (c *cuke) before() (func(), error) {
 	// setup mock spotify server
 	l, err := net.Listen("tcp", "127.0.0.1:6000")
 	if err != nil {
 		return nil, err
 	}
-	t.mockSpotify = spotify.NewMockSpotify()
-	t.mockSpotifyServer = httptest.NewUnstartedServer(t.mockSpotify.Mux())
-	t.mockSpotifyServer.Listener.Close()
-	t.mockSpotifyServer.Listener = l
-	t.mockSpotifyServer.Start()
+	c.mockSpotify = spotify.NewMockSpotify()
+	c.mockSpotifyServer = httptest.NewUnstartedServer(c.mockSpotify.Mux())
+	c.mockSpotifyServer.Listener.Close()
+	c.mockSpotifyServer.Listener = l
+	c.mockSpotifyServer.Start()
 
 	// setup db
-	t.db = pg.Connect(&pg.Options{
+	c.db = pg.Connect(&pg.Options{
 		Addr:     "localhost:5432",
 		User:     "stridesongs",
 		Password: "password",
 		Database: "stridesongs",
 	})
-	if err := t.db.Ping(context.Background()); err != nil {
+	if err := c.db.Ping(context.Background()); err != nil {
 		return nil, err
 	}
 
 	return func() {
-		t.mockSpotifyServer.Close()
+		c.mockSpotifyServer.Close()
 	}, nil
 }
 
-func (t *tester) beforeEach() error {
-	if err := database.Clear(t.db); err != nil {
+func (c *cuke) beforeEach() error {
+	if err := database.Clear(c.db); err != nil {
 		return err
 	}
 
-	t.mockSpotify.Clear()
+	c.mockSpotify.Clear()
 
 	return nil
 }
 
-func (t *tester) theFollowingUserExists(user *internal.User) error {
-	if _, err := t.db.Model(user).Insert(); err != nil {
-		return err
-	}
-	return nil
+func (c *cuke) noErr(f func() error) {
+	assert.NoError(c.t, f())
 }
 
-func (t *tester) theFollowSpotifyUsersExist(userIDs []string) error {
-	for _, id := range userIDs {
-		t.mockSpotify.AddUser(id)
-	}
-	return nil
-}
-
-func (t *tester) theUserSetsTheirRefreshToken(user *internal.User, refreshToken string) error {
-	user.SpotifyRefreshToken = "zach:refresh-token"
-	if _, err := t.db.Model(user).Where("id = ?id").Update(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (t *tester) theUserWaitsForLibrarySyncToSucceed(user *internal.User) error {
-	success := make(chan bool, 1)
-	errCh := make(chan error, 1)
-	go func() {
-		for {
-			if err := t.db.Model(user).Where("id = ?id").Select(); err != nil {
-				errCh <- err
-				return
-			}
-
-			switch user.LibrarySyncStatus {
-			case internal.LibrarySyncStatusSucceeded:
-				success <- true
-				return
-			default:
-				time.Sleep(1 * time.Second)
-			}
+func (c *cuke) theFollowingUserExists(user *internal.User) {
+	c.noErr(func() error {
+		if _, err := c.db.Model(user).Insert(); err != nil {
+			return err
 		}
-	}()
-
-	select {
-	case <-success:
 		return nil
-	case err := <-errCh:
-		return err
-	case <-time.After(30 * time.Second):
-		return fmt.Errorf("timed out waiting for state")
+	})
+}
+
+func (c *cuke) theFollowSpotifyUsersExist(userIDs []string) {
+	for _, id := range userIDs {
+		c.mockSpotify.AddUser(id)
 	}
 }
 
-func (t *tester) given() *tester {
-	return t
+func (c *cuke) theUserSetsTheirRefreshToken(user *internal.User, refreshToken string) {
+	c.noErr(func() error {
+		user.SpotifyRefreshToken = "zach:refresh-token"
+		if _, err := c.db.Model(user).Where("id = ?id").Update(); err != nil {
+			return err
+		}
+		return nil
+	})
 }
-func (t *tester) when() *tester {
-	return t
+
+func (c *cuke) theUserWaitsForLibrarySyncToSucceed(user *internal.User) {
+	c.noErr(func() error {
+		success := make(chan bool, 1)
+		errCh := make(chan error, 1)
+		go func() {
+			for {
+				if err := c.db.Model(user).Where("id = ?id").Select(); err != nil {
+					errCh <- err
+					return
+				}
+
+				switch user.LibrarySyncStatus {
+				case internal.LibrarySyncStatusSucceeded:
+					success <- true
+					return
+				default:
+					time.Sleep(1 * time.Second)
+				}
+			}
+		}()
+
+		select {
+		case <-success:
+			return nil
+		case err := <-errCh:
+			return err
+		case <-time.After(30 * time.Second):
+			return fmt.Errorf("timed out waiting for state")
+		}
+	})
 }
-func (t *tester) then() *tester {
-	return t
+
+func (c *cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlaylists *[]internal.Playlist) {
+	var playlists []internal.Playlist
+	assert.NoError(c.t, c.db.Model(&playlists).Where("user_id = ?", user.ID).Select())
+
+	assert.Equal(c.t, len(*expectedPlaylists), len(playlists))
 }
-func (t *tester) and() *tester {
-	return t
+
+func (c *cuke) given() *cuke {
+	return c
+}
+func (c *cuke) when() *cuke {
+	return c
+}
+func (c *cuke) then() *cuke {
+	return c
+}
+func (c *cuke) and() *cuke {
+	return c
 }
 
 func TestLibrarySync(t *testing.T) {
-	tester := tester{}
-	after, err := tester.before()
+	cuke := cuke{t: t}
+	after, err := cuke.before()
 	assert.NoError(t, err)
 	defer after()
 
 	t.Run("happy path", func(t *testing.T) {
-		assert.NoError(t, tester.beforeEach())
+		cuke.beforeEach()
 
-		assert.NoError(t, tester.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"}))
+		cuke.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"})
 
 		user := internal.User{
 			LibrarySyncStatus: internal.LibrarySyncStatusPendingRefreshToken,
 		}
-		assert.NoError(t, tester.and().theFollowingUserExists(&user))
+		cuke.and().theFollowingUserExists(&user)
 
-		assert.NoError(t, tester.when().theUserSetsTheirRefreshToken(&user, "zach:refresh-token"))
+		cuke.when().theUserSetsTheirRefreshToken(&user, "zach:refresh-token")
 
-		assert.NoError(t, tester.and().theUserWaitsForLibrarySyncToSucceed(&user))
+		cuke.and().theUserWaitsForLibrarySyncToSucceed(&user)
+
+		expectedPlaylists := make([]internal.Playlist, len(internal.SPMs))
+		for i, spm := range internal.SPMs {
+			expectedPlaylists[i].SPM = spm
+		}
+		cuke.then().theUserHasTheFollowingPlaylists(&user, &expectedPlaylists)
 
 	})
 }

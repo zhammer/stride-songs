@@ -7,7 +7,7 @@ import (
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
-var spms = []int{
+var SPMs = []int{
 	125,
 	130,
 	135,
@@ -31,8 +31,8 @@ func spread(list []interface{}) []interface{} {
 }
 
 func createInitialPlaylists(user User) []Playlist {
-	playlists := make([]Playlist, len(spms))
-	for i, spm := range spms {
+	playlists := make([]Playlist, len(SPMs))
+	for i, spm := range SPMs {
 		playlists[i] = Playlist{
 			SPM:    spm,
 			UserID: user.ID,
