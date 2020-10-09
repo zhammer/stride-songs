@@ -5,4 +5,4 @@
 # for the sake of CI passing, we create an empty .env file if it doesnt exist.
 touch .env
 
-docker-compose -f docker-compose.yml -f docker-compose.test.yml up
+docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
