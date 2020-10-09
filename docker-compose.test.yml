@@ -3,4 +3,3 @@ version: "3.6"
 services:
   stridesongs:
     env_file: .env.test
-    # network_mode: host  # don't delete, this is uncommented in CI
