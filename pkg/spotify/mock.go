@@ -32,12 +32,12 @@ func (u *mockUser) Playlist(playlistID string) (*mockPlaylist, bool) {
 	return nil, false
 }
 
-type mockSpotify struct {
+type MockSpotify struct {
 	Tracks []AnalyzedTrack
 	Users  []mockUser
 }
 
-func (s *mockSpotify) User(userID string) (*mockUser, bool) {
+func (s *MockSpotify) User(userID string) (*mockUser, bool) {
 	for i := range s.Users {
 		user := &s.Users[i]
 		if user.ID == userID {
@@ -48,15 +48,15 @@ func (s *mockSpotify) User(userID string) (*mockUser, bool) {
 	return nil, false
 }
 
-func (s *mockSpotify) AddUser(userID string) {
+func (s *MockSpotify) AddUser(userID string) {
 	s.Users = append(s.Users, mockUser{ID: userID})
 }
 
-func (s *mockSpotify) Clear() {
-	s = &mockSpotify{}
+func (s *MockSpotify) Clear() {
+	s = &MockSpotify{}
 }
 
-func (s *mockSpotify) Mux() http.Handler {
+func (s *MockSpotify) Mux() http.Handler {
 	mux := gmux.NewRouter()
 
 	mux.HandleFunc("/_status", func(w http.ResponseWriter, r *http.Request) {
@@ -238,6 +238,6 @@ func (s *mockSpotify) Mux() http.Handler {
 	return mux
 }
 
-func NewMockSpotify() *mockSpotify {
-	return &mockSpotify{}
+func NewMockSpotify() *MockSpotify {
+	return &MockSpotify{}
 }

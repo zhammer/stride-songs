@@ -2,99 +2,149 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/stretchr/testify/assert"
 	"github.com/zhammer/stride-songs/internal"
 	"github.com/zhammer/stride-songs/pkg/database"
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
-func TestLibrarySync(t *testing.T) {
+type tester struct {
+	mockSpotify       *spotify.MockSpotify
+	mockSpotifyServer *httptest.Server
+	db                *pg.DB
+}
+
+func (t *tester) before() (func(), error) {
 	// setup mock spotify server
 	l, err := net.Listen("tcp", "127.0.0.1:6000")
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
-	mockSpotify := spotify.NewMockSpotify()
-	mockSpotifyServer := httptest.NewUnstartedServer(mockSpotify.Mux())
-	mockSpotifyServer.Listener.Close()
-	mockSpotifyServer.Listener = l
-	mockSpotifyServer.Start()
-	defer mockSpotifyServer.Close()
+	t.mockSpotify = spotify.NewMockSpotify()
+	t.mockSpotifyServer = httptest.NewUnstartedServer(t.mockSpotify.Mux())
+	t.mockSpotifyServer.Listener.Close()
+	t.mockSpotifyServer.Listener = l
+	t.mockSpotifyServer.Start()
 
-	// connect to database
-	db := pg.Connect(&pg.Options{
+	// setup db
+	t.db = pg.Connect(&pg.Options{
 		Addr:     "localhost:5432",
 		User:     "stridesongs",
 		Password: "password",
 		Database: "stridesongs",
 	})
-	if err := db.Ping(context.Background()); err != nil {
+	if err := t.db.Ping(context.Background()); err != nil {
+		return nil, err
+	}
+
+	return func() {
+		t.mockSpotifyServer.Close()
+	}, nil
+}
+
+func (t *tester) beforeEach() error {
+	if err := database.Clear(t.db); err != nil {
+		return err
+	}
+
+	t.mockSpotify.Clear()
+
+	return nil
+}
+
+func (t *tester) theFollowingUserExists(user *internal.User) error {
+	if _, err := t.db.Model(user).Insert(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *tester) theFollowSpotifyUsersExist(userIDs []string) error {
+	for _, id := range userIDs {
+		t.mockSpotify.AddUser(id)
+	}
+	return nil
+}
+
+func (t *tester) theUserSetsTheirRefreshToken(user *internal.User, refreshToken string) error {
+	user.SpotifyRefreshToken = "zach:refresh-token"
+	if _, err := t.db.Model(user).Where("id = ?id").Update(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *tester) theUserWaitsForLibrarySyncToSucceed(user *internal.User) error {
+	success := make(chan bool, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		for {
+			if err := t.db.Model(user).Where("id = ?id").Select(); err != nil {
+				errCh <- err
+				return
+			}
+
+			switch user.LibrarySyncStatus {
+			case internal.LibrarySyncStatusSucceeded:
+				success <- true
+				return
+			default:
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}()
+
+	select {
+	case <-success:
+		return nil
+	case err := <-errCh:
+		return err
+	case <-time.After(30 * time.Second):
+		return fmt.Errorf("timed out waiting for state")
+	}
+}
+
+func (t *tester) given() *tester {
+	return t
+}
+func (t *tester) when() *tester {
+	return t
+}
+func (t *tester) then() *tester {
+	return t
+}
+func (t *tester) and() *tester {
+	return t
+}
+
+func TestLibrarySync(t *testing.T) {
+	tester := tester{}
+	after, err := tester.before()
+	if err != nil {
 		t.Fatal(err.Error())
 	}
-
-	// to run before each test case
-	beforeEach := func() error {
-		if err := database.Clear(db); err != nil {
-			return err
-		}
-
-		mockSpotify.Clear()
-
-		return nil
-	}
+	defer after()
 
 	t.Run("happy path", func(t *testing.T) {
-		beforeEach()
+		assert.NoError(t, tester.beforeEach())
 
-		// given the following user exists in spotify
-		mockSpotify.AddUser("user")
-		mockSpotify.AddUser("stridesongs")
+		assert.NoError(t, tester.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"}))
 
-		// given a user
 		user := internal.User{
 			LibrarySyncStatus: internal.LibrarySyncStatusPendingRefreshToken,
 		}
-		if _, err := db.Model(&user).Insert(); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, tester.and().theFollowingUserExists(&user))
 
-		// when we set their refresh token
-		user.SpotifyRefreshToken = "user:refresh-token"
-		if _, err := db.Model(&user).Where("id = ?id").Update(); err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, tester.when().theUserSetsTheirRefreshToken(&user, "zach:refresh-token"))
 
-		success := make(chan bool, 1)
-		go func() {
-			for {
-				t.Log("checking status!")
-				user := internal.User{ID: user.ID}
-				if err := db.Model(&user).Where("id = ?id").Select(); err != nil {
-					t.Log(err)
-				}
+		assert.NoError(t, tester.and().theUserWaitsForLibrarySyncToSucceed(&user))
 
-				switch user.LibrarySyncStatus {
-				case internal.LibrarySyncStatusSucceeded:
-					success <- true
-					return
-				default:
-					t.Logf("status is %s, will query again", user.LibrarySyncStatus)
-					time.Sleep(1 * time.Second)
-				}
-			}
-		}()
-
-		select {
-		case <-success:
-			break
-		case <-time.After(30 * time.Second):
-			log.Fatal("timed out")
-		}
 	})
 }
