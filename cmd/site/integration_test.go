@@ -162,6 +162,10 @@ func (c *cuke) and() *cuke {
 }
 
 func TestLibrarySync(t *testing.T) {
+	// spotify tracks
+	var (
+		bebey = spotify.AnalyzedTrack{Track: spotify.Track{ID: "bebey-theo-london"}, Tempo: 164.044}
+	)
 	cuke := cuke{t: t}
 	after, err := cuke.before()
 	assert.NoError(t, err)
@@ -171,10 +175,8 @@ func TestLibrarySync(t *testing.T) {
 		cuke.beforeEach()
 
 		cuke.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"})
-		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{
-			{Track: spotify.Track{ID: "bebey-theo-london"}, Tempo: 164.044},
-		})
-		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{"bebey-theo-london"})
+		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey})
+		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{bebey.ID})
 
 		user := internal.User{
 			LibrarySyncStatus: internal.LibrarySyncStatusPendingRefreshToken,
@@ -193,7 +195,7 @@ func TestLibrarySync(t *testing.T) {
 			switch spm {
 			case 165:
 				playlist.Tracks = []internal.PlaylistTrack{
-					{SpotifyID: "bebey-theo-london", Status: internal.PlaylistTrackStatusAdded},
+					{SpotifyID: bebey.ID, Status: internal.PlaylistTrackStatusAdded},
 				}
 			}
 
