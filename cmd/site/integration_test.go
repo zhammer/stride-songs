@@ -206,6 +206,8 @@ func TestLibrarySync(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		cuke.beforeEach()
 
+		// todo: stridesongs user should always exist
+		// use constants for spotify ids
 		cuke.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"})
 		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey, cheatCode, marilyn})
 		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{bebey.ID, cheatCode.ID, marilyn.ID})
