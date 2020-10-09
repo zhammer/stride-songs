@@ -137,6 +137,12 @@ func (c *cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlay
 		assert.Equal(c.t, playlist.SPM, expectedPlaylist.SPM)
 
 		assert.Equal(c.t, len(expectedPlaylist.Tracks), len(playlist.Tracks))
+		for i, track := range playlist.Tracks {
+			expectedTrack := expectedPlaylist.Tracks[i]
+
+			assert.Equal(c.t, expectedTrack.SpotifyID, track.SpotifyID)
+			assert.Equal(c.t, expectedTrack.Status, track.Status)
+		}
 	}
 }
 
@@ -164,7 +170,12 @@ func (c *cuke) and() *cuke {
 func TestLibrarySync(t *testing.T) {
 	// spotify tracks
 	var (
-		bebey = spotify.AnalyzedTrack{Track: spotify.Track{ID: "bebey-theo-london"}, Tempo: 164.044}
+		// bebey - theopilus london
+		bebey = spotify.AnalyzedTrack{Track: spotify.Track{ID: "7EZ8HvyKfad2vUIOivqjN5"}, Tempo: 164.044}
+		// cheat code - dap the contract
+		cheatCode = spotify.AnalyzedTrack{Track: spotify.Track{ID: "4buERRuDerqKP2g0GAOg4V"}, Tempo: 166.084}
+		// marilyn - mount kimbie
+		marilyn = spotify.AnalyzedTrack{Track: spotify.Track{ID: "5jJPcImQkogKdwsVS36zH7"}, Tempo: 179.826}
 	)
 	cuke := cuke{t: t}
 	after, err := cuke.before()
@@ -175,8 +186,8 @@ func TestLibrarySync(t *testing.T) {
 		cuke.beforeEach()
 
 		cuke.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"})
-		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey})
-		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{bebey.ID})
+		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey, cheatCode, marilyn})
+		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{bebey.ID, cheatCode.ID, marilyn.ID})
 
 		user := internal.User{
 			LibrarySyncStatus: internal.LibrarySyncStatusPendingRefreshToken,
@@ -196,6 +207,11 @@ func TestLibrarySync(t *testing.T) {
 			case 165:
 				playlist.Tracks = []internal.PlaylistTrack{
 					{SpotifyID: bebey.ID, Status: internal.PlaylistTrackStatusAdded},
+					{SpotifyID: cheatCode.ID, Status: internal.PlaylistTrackStatusAdded},
+				}
+			case 180:
+				playlist.Tracks = []internal.PlaylistTrack{
+					{SpotifyID: marilyn.ID, Status: internal.PlaylistTrackStatusAdded},
 				}
 			}
 

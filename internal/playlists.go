@@ -7,6 +7,8 @@ import (
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
+const spmThreshold = 1.1
+
 var SPMs = []int{
 	125,
 	130,
@@ -48,7 +50,7 @@ func groupTracks(playlists []Playlist, tracks []spotify.AnalyzedTrack) {
 		go func(playlist *Playlist) {
 			for _, track := range tracks {
 				// track's tempo must be close to the playlist's SPM
-				if math.Abs(float64(playlist.SPM)-track.Tempo) < 1 {
+				if math.Abs(float64(playlist.SPM)-track.Tempo) < spmThreshold {
 					playlist.Tracks = append(playlist.Tracks, PlaylistTrack{
 						PlaylistID: playlist.ID,
 						SpotifyID:  track.ID,
