@@ -13,7 +13,7 @@ import (
 type mockPlaylist struct {
 	ID string `json:"id"`
 	CreatePlaylistRequest
-	Tracks []AnalyzedTrack
+	Tracks []*AnalyzedTrack
 }
 
 type mockUser struct {
@@ -217,13 +217,11 @@ func (s *MockSpotify) Mux() http.Handler {
 			return
 		}
 
-		tracks := make([]AnalyzedTrack, len(data.URIs))
+		tracks := make([]*AnalyzedTrack, len(data.URIs))
 		for i, uri := range data.URIs {
 			id := strings.Split(uri, ":")[2]
-			for _, track := range user.Tracks {
-				if track.ID == id {
-					tracks[i] = *track
-				}
+			if track, ok := s.Track(id); ok {
+				tracks[i] = track
 			}
 		}
 

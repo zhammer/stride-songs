@@ -154,6 +154,27 @@ func (c *cuke) theSpotifyUserHasTheFollowingTracks(userID string, trackIDs []str
 	assert.NoError(c.t, c.mockSpotify.AddUserTracks(userID, trackIDs))
 }
 
+func (c *cuke) theSpotifyUserHasTheFollowingPlaylists(userID string, expectedPlaylists *[]internal.Playlist) {
+	user, ok := c.mockSpotify.User(userID)
+	assert.True(c.t, ok)
+
+	assert.Equal(c.t, len(user.Playlists), len(*expectedPlaylists))
+	for i, playlist := range user.Playlists {
+		expectedPlaylist := (*expectedPlaylists)[i]
+
+		// note: at the moment we don't check the spotify ID, because we can't predict this
+		// up front. maybe if we made the id some predictable construct, like "165-{user}-playlist"
+		// we could do this.
+
+		assert.Equal(c.t, len(playlist.Tracks), len(expectedPlaylist.Tracks))
+		for i, track := range playlist.Tracks {
+			expectedTrack := expectedPlaylist.Tracks[i]
+
+			assert.Equal(c.t, expectedTrack.SpotifyID, track.ID)
+		}
+	}
+}
+
 func (c *cuke) given() *cuke {
 	return c
 }
@@ -217,6 +238,9 @@ func TestLibrarySync(t *testing.T) {
 
 		}
 		cuke.then().theUserHasTheFollowingPlaylists(&user, &expectedPlaylists)
+
+		// todo: check that playlists are in spotify
+		cuke.and().theSpotifyUserHasTheFollowingPlaylists("stridesongs", &expectedPlaylists)
 
 	})
 }
