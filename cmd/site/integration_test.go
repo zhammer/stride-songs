@@ -197,6 +197,8 @@ func TestLibrarySync(t *testing.T) {
 		cheatCode = spotify.AnalyzedTrack{Track: spotify.Track{ID: "4buERRuDerqKP2g0GAOg4V"}, Tempo: 166.084}
 		// marilyn - mount kimbie
 		marilyn = spotify.AnalyzedTrack{Track: spotify.Track{ID: "5jJPcImQkogKdwsVS36zH7"}, Tempo: 179.826}
+		// if you call - angie mcmahon
+		ifYouCall = spotify.AnalyzedTrack{Track: spotify.Track{ID: "7J29qM3iwzKv83ZnTLdZ0v"}, Tempo: 106.704}
 	)
 	cuke := cuke{t: t}
 	after, err := cuke.before()
@@ -209,8 +211,8 @@ func TestLibrarySync(t *testing.T) {
 		// todo: stridesongs user should always exist
 		// use constants for spotify ids
 		cuke.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"})
-		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey, cheatCode, marilyn})
-		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{bebey.ID, cheatCode.ID, marilyn.ID})
+		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey, cheatCode, marilyn, ifYouCall})
+		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{bebey.ID, cheatCode.ID, marilyn.ID, ifYouCall.ID})
 
 		user := internal.User{
 			LibrarySyncStatus: internal.LibrarySyncStatusPendingRefreshToken,
