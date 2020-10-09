@@ -26,7 +26,8 @@ type cuke struct {
 
 func (c *cuke) before() (func(), error) {
 	// setup mock spotify server
-	l, err := net.Listen("tcp", "127.0.0.1:6000")
+	// need 0.0.0.0 binding for CI
+	l, err := net.Listen("tcp", "0.0.0.0:6000")
 	if err != nil {
 		return nil, err
 	}
