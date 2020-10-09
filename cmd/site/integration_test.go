@@ -200,26 +200,36 @@ func TestLibrarySync(t *testing.T) {
 		// if you call - angie mcmahon
 		ifYouCall = spotify.AnalyzedTrack{Track: spotify.Track{ID: "7J29qM3iwzKv83ZnTLdZ0v"}, Tempo: 106.704}
 	)
+	// spotify userIDs
+	var (
+		zach        = "zach"
+		strideSongs = "stridesongs"
+	)
 	cuke := cuke{t: t}
 	after, err := cuke.before()
 	assert.NoError(t, err)
 	defer after()
 
+	background := func() {
+		cuke.given().theFollowSpotifyUsersExist([]string{strideSongs})
+	}
+
 	t.Run("happy path", func(t *testing.T) {
 		cuke.beforeEach()
 
+		background()
+
 		// todo: stridesongs user should always exist
-		// use constants for spotify ids
-		cuke.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"})
+		cuke.given().theFollowSpotifyUsersExist([]string{zach})
 		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey, cheatCode, marilyn, ifYouCall})
-		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{bebey.ID, cheatCode.ID, marilyn.ID, ifYouCall.ID})
+		cuke.and().theSpotifyUserHasTheFollowingTracks(zach, []string{bebey.ID, cheatCode.ID, marilyn.ID, ifYouCall.ID})
 
 		user := internal.User{
 			LibrarySyncStatus: internal.LibrarySyncStatusPendingRefreshToken,
 		}
 		cuke.and().theFollowingUserExists(&user)
 
-		cuke.when().theUserSetsTheirRefreshToken(&user, "zach:refresh-token")
+		cuke.when().theUserSetsTheirRefreshToken(&user, zach+":refresh-token")
 
 		cuke.and().theUserWaitsForLibrarySyncToSucceed(&user)
 
