@@ -126,6 +126,11 @@ func (c *cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlay
 	assert.NoError(c.t, c.db.Model(&playlists).Where("user_id = ?", user.ID).Select())
 
 	assert.Equal(c.t, len(*expectedPlaylists), len(playlists))
+
+	for i, playlist := range playlists {
+		expectedPlaylist := (*expectedPlaylists)[i]
+		assert.Equal(c.t, playlist.SPM, expectedPlaylist.SPM)
+	}
 }
 
 func (c *cuke) given() *cuke {
