@@ -17,8 +17,8 @@ func (p *Playlist) Name() string {
 type playlistTrackStatus string
 
 const (
-	playlistTrackStatusPendingAdd = playlistTrackStatus("pending_add")
-	playlistTrackStatusAdded      = playlistTrackStatus("added")
+	PlaylistTrackStatusPendingAdd = playlistTrackStatus("pending_add")
+	PlaylistTrackStatusAdded      = playlistTrackStatus("added")
 )
 
 type PlaylistTrack struct {

@@ -140,7 +140,7 @@ func (sm *LibrarySyncMachine) addTracks(ctx context.Context, old User, new User)
 	var playlists []Playlist
 	if err := sm.db.Model(&playlists).
 		Where("user_id = ?", new.ID).
-		Relation("Tracks", withWhere("status = ?", playlistTrackStatusPendingAdd)).
+		Relation("Tracks", withWhere("status = ?", PlaylistTrackStatusPendingAdd)).
 		Select(); err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (sm *LibrarySyncMachine) addTracks(ctx context.Context, old User, new User)
 			if len(playlist.Tracks) == 0 {
 				continue
 			}
-			_, err := tx.Model(&playlist.Tracks).Set("status = ?", playlistTrackStatusAdded).Update()
+			_, err := tx.Model(&playlist.Tracks).Set("status = ?", PlaylistTrackStatusAdded).Update()
 			if err != nil {
 				return err
 			}

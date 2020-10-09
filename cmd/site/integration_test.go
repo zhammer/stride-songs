@@ -123,14 +123,29 @@ func (c *cuke) theUserWaitsForLibrarySyncToSucceed(user *internal.User) {
 
 func (c *cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlaylists *[]internal.Playlist) {
 	var playlists []internal.Playlist
-	assert.NoError(c.t, c.db.Model(&playlists).Where("user_id = ?", user.ID).Select())
+	assert.NoError(c.t,
+		c.db.Model(&playlists).
+			Where("user_id = ?", user.ID).
+			Relation("Tracks").
+			Select(),
+	)
 
 	assert.Equal(c.t, len(*expectedPlaylists), len(playlists))
 
 	for i, playlist := range playlists {
 		expectedPlaylist := (*expectedPlaylists)[i]
 		assert.Equal(c.t, playlist.SPM, expectedPlaylist.SPM)
+
+		assert.Equal(c.t, len(expectedPlaylist.Tracks), len(playlist.Tracks))
 	}
+}
+
+func (c *cuke) theFollowingSpotifyTracksExist(tracks *[]spotify.AnalyzedTrack) {
+	c.mockSpotify.AddTracks(*tracks)
+}
+
+func (c *cuke) theSpotifyUserHasTheFollowingTracks(userID string, trackIDs []string) {
+	assert.NoError(c.t, c.mockSpotify.AddUserTracks(userID, trackIDs))
 }
 
 func (c *cuke) given() *cuke {
@@ -156,6 +171,10 @@ func TestLibrarySync(t *testing.T) {
 		cuke.beforeEach()
 
 		cuke.given().theFollowSpotifyUsersExist([]string{"zach", "stridesongs"})
+		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{
+			{Track: spotify.Track{ID: "bebey-theo-london"}, Tempo: 164.044},
+		})
+		cuke.and().theSpotifyUserHasTheFollowingTracks("zach", []string{"bebey-theo-london"})
 
 		user := internal.User{
 			LibrarySyncStatus: internal.LibrarySyncStatusPendingRefreshToken,
@@ -168,7 +187,16 @@ func TestLibrarySync(t *testing.T) {
 
 		expectedPlaylists := make([]internal.Playlist, len(internal.SPMs))
 		for i, spm := range internal.SPMs {
-			expectedPlaylists[i].SPM = spm
+			playlist := &expectedPlaylists[i]
+			playlist.SPM = spm
+
+			switch spm {
+			case 165:
+				playlist.Tracks = []internal.PlaylistTrack{
+					{SpotifyID: "bebey-theo-london", Status: internal.PlaylistTrackStatusAdded},
+				}
+			}
+
 		}
 		cuke.then().theUserHasTheFollowingPlaylists(&user, &expectedPlaylists)
 

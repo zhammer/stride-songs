@@ -52,7 +52,7 @@ func groupTracks(playlists []Playlist, tracks []spotify.AnalyzedTrack) {
 					playlist.Tracks = append(playlist.Tracks, PlaylistTrack{
 						PlaylistID: playlist.ID,
 						SpotifyID:  track.ID,
-						Status:     playlistTrackStatusPendingAdd,
+						Status:     PlaylistTrackStatusPendingAdd,
 					})
 				}
 			}

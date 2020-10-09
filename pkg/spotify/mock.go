@@ -19,7 +19,7 @@ type mockPlaylist struct {
 type mockUser struct {
 	ID        string `json:"id"`
 	Playlists []mockPlaylist
-	Tracks    []AnalyzedTrack
+	Tracks    []*AnalyzedTrack
 }
 
 func (u *mockUser) Playlist(playlistID string) (*mockPlaylist, bool) {
@@ -48,8 +48,39 @@ func (s *MockSpotify) User(userID string) (*mockUser, bool) {
 	return nil, false
 }
 
+func (s *MockSpotify) Track(trackID string) (*AnalyzedTrack, bool) {
+	for i := range s.Tracks {
+		track := &s.Tracks[i]
+		if track.ID == trackID {
+			return track, true
+		}
+	}
+	return nil, false
+}
+
 func (s *MockSpotify) AddUser(userID string) {
 	s.Users = append(s.Users, mockUser{ID: userID})
+}
+
+func (s *MockSpotify) AddTracks(tracks []AnalyzedTrack) {
+	s.Tracks = append(s.Tracks, tracks...)
+}
+
+func (s *MockSpotify) AddUserTracks(userID string, trackIDs []string) error {
+	user, ok := s.User(userID)
+	if !ok {
+		return fmt.Errorf("user %s not found", userID)
+	}
+
+	for _, trackID := range trackIDs {
+		track, ok := s.Track(trackID)
+		if !ok {
+			return fmt.Errorf("track %s not found", trackID)
+		}
+		user.Tracks = append(user.Tracks, track)
+	}
+
+	return nil
 }
 
 func (s *MockSpotify) Clear() {
@@ -114,7 +145,7 @@ func (s *MockSpotify) Mux() http.Handler {
 			Items []Item `json:"items"`
 		}
 		for _, track := range user.Tracks {
-			data.Items = append(data.Items, Item{track})
+			data.Items = append(data.Items, Item{*track})
 		}
 
 		if err := json.NewEncoder(w).Encode(&data); err != nil {
@@ -191,7 +222,7 @@ func (s *MockSpotify) Mux() http.Handler {
 			id := strings.Split(uri, ":")[2]
 			for _, track := range user.Tracks {
 				if track.ID == id {
-					tracks[i] = track
+					tracks[i] = *track
 				}
 			}
 		}
