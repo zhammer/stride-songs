@@ -10,6 +10,5 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kr/text v0.2.0 // indirect
-	github.com/markbates/grift v1.5.0
 	github.com/stretchr/testify v1.6.1
 )
