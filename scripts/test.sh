@@ -10,7 +10,8 @@ touch .env
 # i _do_ think host.docker.internal support has landed in linux, i just don't
 # know how to set it up at the moment
 # https://stackoverflow.com/questions/48546124/what-is-linux-equivalent-of-host-docker-internal/48547074#48547074
-if ! [ -z "$GITHUB_ACTION" ]; then
+if ! [ -z "$GITHUB_ACTIONS" ]; then
+  echo "running in github actions, updating .env.test"
   sed -i 's/host.docker.internal/172.17.0.1' .env.test
 fi
 
