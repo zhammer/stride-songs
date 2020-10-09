@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/uuid"
 	gmux "github.com/gorilla/mux"
 )
 
@@ -114,7 +113,7 @@ func (s *MockSpotify) Mux() http.Handler {
 		}
 
 		playlist := mockPlaylist{
-			ID:                    uuid.New().String(),
+			ID:                    fmt.Sprintf("IDFOR:%s", data.Name),
 			CreatePlaylistRequest: data,
 		}
 		user.Playlists = append(user.Playlists, playlist)

@@ -137,6 +137,9 @@ func (c *cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlay
 	for i, playlist := range playlists {
 		expectedPlaylist := (*expectedPlaylists)[i]
 		assert.Equal(c.t, playlist.SPM, expectedPlaylist.SPM)
+		// we manually set the id of a new playlist in our mock spotify service
+		// to be "IDFOR:" + the provided name
+		assert.Equal(c.t, "IDFOR:"+expectedPlaylist.Name(), playlist.SpotifyID)
 
 		assert.Equal(c.t, len(expectedPlaylist.Tracks), len(playlist.Tracks))
 		for i, track := range playlist.Tracks {
@@ -164,9 +167,7 @@ func (c *cuke) theSpotifyUserHasTheFollowingPlaylists(userID string, expectedPla
 	for i, playlist := range user.Playlists {
 		expectedPlaylist := (*expectedPlaylists)[i]
 
-		// note: at the moment we don't check the spotify ID, because we can't predict this
-		// up front. maybe if we made the id some predictable construct, like "165-{user}-playlist"
-		// we could do this.
+		assert.Equal(c.t, expectedPlaylist.Name(), playlist.Name)
 
 		assert.Equal(c.t, len(playlist.Tracks), len(expectedPlaylist.Tracks))
 		for i, track := range playlist.Tracks {
