@@ -115,7 +115,7 @@ func (c *cuke) theUserWaitsForLibrarySyncToSucceed(user *internal.User) {
 			return nil
 		case err := <-errCh:
 			return err
-		case <-time.After(30 * time.Second):
+		case <-time.After(10 * time.Second):
 			return fmt.Errorf("timed out waiting for state")
 		}
 	})
