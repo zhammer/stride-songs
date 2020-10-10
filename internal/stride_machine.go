@@ -85,5 +85,28 @@ func (sm *StrideMachine) handleStrideEventFinish(ctx context.Context, event Stri
 }
 
 func (sm *StrideMachine) handleStrideEventSpmUpdate(ctx context.Context, event StrideEvent) error {
-	return ErrNotImplemented
+	// pluck payload
+	payload := spmUpdatePayload{}
+	if err := mapstructure.Decode(&event.Payload, &payload); err != nil {
+		return err
+	}
+
+	playlist, ok := event.User.PlaylistAtSPM(payload.SPM)
+	if !ok {
+		return fmt.Errorf("no playlist for user %d found at spm %d", event.User.ID, payload.SPM)
+	}
+
+	ctx, err := sm.spotify.WithUserAccessToken(ctx, event.User.SpotifyRefreshToken)
+	if err != nil {
+		return nil
+	}
+
+	if err := sm.spotify.Play(ctx, spotify.PlayRequest{
+		ItemType: spotify.ItemTypePlaylist,
+		ItemID:   playlist.SpotifyID,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
