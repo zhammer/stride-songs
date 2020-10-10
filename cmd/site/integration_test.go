@@ -259,7 +259,6 @@ func TestLibrarySync(t *testing.T) {
 		}
 		cuke.then().theUserHasTheFollowingPlaylists(&user, &expectedPlaylists)
 
-		// todo: check that playlists are in spotify
 		cuke.and().theSpotifyUserHasTheFollowingPlaylists("stridesongs", &expectedPlaylists)
 
 	})
