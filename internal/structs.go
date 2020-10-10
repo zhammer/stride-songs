@@ -31,4 +31,21 @@ type User struct {
 	ID                  int               `json:"id"`
 	SpotifyRefreshToken string            `json:"spotify_refresh_token"`
 	LibrarySyncStatus   librarySyncStatus `json:"library_sync_status"`
+	Playlists           []Playlist        `pg:"rel:has-many"`
+}
+
+type strideEventType string
+
+const (
+	strideEventTypeStart     = strideEventType("START")
+	strideEventTypeFinish    = strideEventType("FINISH")
+	strideEventTypeSpmUpdate = strideEventType("SPM_UPDATE")
+)
+
+type StrideEvent struct {
+	Id      int
+	UserID  int   `json:"user_id"`
+	User    *User `pg:"rel:has-one"`
+	Type    strideEventType
+	Payload map[string]interface{}
 }
