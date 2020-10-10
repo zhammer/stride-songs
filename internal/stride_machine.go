@@ -63,17 +63,20 @@ func (sm *StrideMachine) handleStrideEventStart(ctx context.Context, event Strid
 		return nil
 	}
 
-	// todo:
-	//   - play playlist
 	if err := sm.spotify.SetRepeatMode(ctx, spotify.RepeatModeContext); err != nil {
 		return err
 	}
 	if err := sm.spotify.ToggleShuffle(ctx, true); err != nil {
 		return err
 	}
-	fmt.Printf("going to play playlist %+v\n", playlist)
+	if err := sm.spotify.Play(ctx, spotify.PlayRequest{
+		ItemType: spotify.ItemTypePlaylist,
+		ItemID:   playlist.SpotifyID,
+	}); err != nil {
+		return err
+	}
 
-	return ErrNotImplemented
+	return nil
 }
 
 func (sm *StrideMachine) handleStrideEventFinish(ctx context.Context, event StrideEvent) error {

@@ -1,6 +1,9 @@
 package spotify
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 type requestConfigOption func(r *requestConfig)
 
@@ -70,3 +73,26 @@ const (
 	RepeatModeContext = repeatMode("context")
 	RepeatModeOff     = repeatMode("off")
 )
+
+type itemType string
+
+const (
+	ItemTypeTrack    = itemType("track")
+	ItemTypeAlbum    = itemType("album")
+	ItemTypePlaylist = itemType("playlist")
+)
+
+type PlayRequest struct {
+	ItemType itemType
+	ItemID   string
+}
+
+func (p *PlayRequest) ToRequestPayload() *playRequest {
+	return &playRequest{
+		ContextURI: fmt.Sprintf("spotify:%s:%s", p.ItemType, p.ItemID),
+	}
+}
+
+type playRequest struct {
+	ContextURI string `json:"context_uri"`
+}
