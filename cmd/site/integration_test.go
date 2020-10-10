@@ -263,3 +263,7 @@ func TestLibrarySync(t *testing.T) {
 
 	})
 }
+
+func TestStrideEvents(t *testing.T) {
+	t.Fatal("todo")
+}
