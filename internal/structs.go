@@ -34,6 +34,17 @@ type User struct {
 	Playlists           []Playlist        `pg:"rel:has-many"`
 }
 
+func (u *User) PlaylistAtSPM(spm int) (*Playlist, bool) {
+	for i := range u.Playlists {
+		playlist := &u.Playlists[i]
+		if playlist.SPM == spm {
+			return playlist, true
+		}
+	}
+
+	return nil, false
+}
+
 type strideEventType string
 
 const (

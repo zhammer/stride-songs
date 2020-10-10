@@ -3,10 +3,24 @@ package internal
 import (
 	"context"
 	"fmt"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type StrideMachine struct {
 	*StrideSongs
+}
+
+// event-specific payloads
+
+type startPayload struct {
+	// spm to start stride at
+	SPM int `mapstructure:"spm"`
+}
+
+type spmUpdatePayload struct {
+	// new spm
+	SPM int `mapstructure:"spm"`
 }
 
 func (sm *StrideMachine) HandleStrideEvent(ctx context.Context, event StrideEvent) error {
@@ -32,11 +46,36 @@ func (sm *StrideMachine) HandleStrideEvent(ctx context.Context, event StrideEven
 }
 
 func (sm *StrideMachine) handleStrideEventStart(ctx context.Context, event StrideEvent) error {
+	// pluck payload
+	payload := startPayload{}
+	if err := mapstructure.Decode(&event.Payload, &payload); err != nil {
+		return err
+	}
+
+	playlist, ok := event.User.PlaylistAtSPM(payload.SPM)
+	if !ok {
+		return fmt.Errorf("no playlist for user %d found at spm %d", event.User.ID, payload.SPM)
+	}
+
+	ctx, err := sm.spotify.WithUserAccessToken(ctx, event.User.SpotifyRefreshToken)
+	if err != nil {
+		return nil
+	}
+
+	// todo:
+	//   - set repeat mode to 'context'
+	//   - play playlist
+	if err := sm.spotify.ToggleShuffle(ctx, true); err != nil {
+		return err
+	}
+	fmt.Printf("going to play playlist %+v\n", playlist)
+
 	return ErrNotImplemented
 }
 
 func (sm *StrideMachine) handleStrideEventFinish(ctx context.Context, event StrideEvent) error {
-	return ErrNotImplemented
+	// nothing to be done here for now
+	return nil
 }
 
 func (sm *StrideMachine) handleStrideEventSpmUpdate(ctx context.Context, event StrideEvent) error {
