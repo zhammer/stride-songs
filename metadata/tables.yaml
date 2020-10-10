@@ -1,0 +1,45 @@
+- table:
+    schema: public
+    name: library_sync_statuses
+  is_enum: true
+- table:
+    schema: public
+    name: playlist_track_statuses
+  is_enum: true
+- table:
+    schema: public
+    name: playlist_tracks
+- table:
+    schema: public
+    name: playlists
+  array_relationships:
+  - name: playlist_tracks
+    using:
+      foreign_key_constraint_on:
+        column: playlist_id
+        table:
+          schema: public
+          name: playlist_tracks
+- table:
+    schema: public
+    name: users
+  array_relationships:
+  - name: playlists
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          schema: public
+          name: playlists
+  event_triggers:
+  - name: library_sync
+    definition:
+      enable_manual: false
+      update:
+        columns:
+        - library_sync_status
+    retry_conf:
+      num_retries: 0
+      interval_sec: 10
+      timeout_sec: 180
+    webhook_from_env: EVENT_TRIGGER_LIBRARY_SYNC

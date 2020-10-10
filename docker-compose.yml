@@ -1,0 +1,45 @@
+version: "3.6"
+
+services:
+  postgres:
+    image: postgres:12.3
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: stridesongs
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stridesongs
+
+  hasura:
+    image: hasura/graphql-engine:v1.3.2.cli-migrations-v2
+    volumes:
+      - ./metadata:/hasura-metadata
+      - ./migrations:/hasura-migrations
+    ports:
+      - "8080:8080"
+    depends_on:
+      - "postgres"
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: "postgres://stridesongs:password@postgres:5432/stridesongs"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: "startup, http-log, webhook-log, websocket-log, query-log"
+
+      EVENT_TRIGGER_LIBRARY_SYNC: "http://stridesongs:3000/api/event_triggers/library_sync"
+
+  stridesongs:
+    image: golang:1.14
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: go run ./cmd/site/
+    env_file: .env
+
+volumes:
+  postgres_data:
