@@ -62,3 +62,11 @@ type AddTracksToPlaylistRequest struct {
 type addTracksToPlaylistRequest struct {
 	URIs []string `json:"uris"`
 }
+
+type repeatMode string
+
+const (
+	RepeatModeTrack   = repeatMode("track")
+	RepeatModeContext = repeatMode("context")
+	RepeatModeOff     = repeatMode("off")
+)

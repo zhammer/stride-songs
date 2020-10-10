@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
 type StrideMachine struct {
@@ -63,8 +64,10 @@ func (sm *StrideMachine) handleStrideEventStart(ctx context.Context, event Strid
 	}
 
 	// todo:
-	//   - set repeat mode to 'context'
 	//   - play playlist
+	if err := sm.spotify.SetRepeatMode(ctx, spotify.RepeatModeContext); err != nil {
+		return err
+	}
 	if err := sm.spotify.ToggleShuffle(ctx, true); err != nil {
 		return err
 	}
