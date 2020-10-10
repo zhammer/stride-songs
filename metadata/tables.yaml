@@ -22,6 +22,13 @@
           name: playlist_tracks
 - table:
     schema: public
+    name: stride_event_types
+  is_enum: true
+- table:
+    schema: public
+    name: stride_events
+- table:
+    schema: public
     name: users
   array_relationships:
   - name: playlists
