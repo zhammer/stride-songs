@@ -9,3 +9,9 @@ func withWhere(condition string, params ...interface{}) relationshipFunc {
 		return q.Where(condition, params...), nil
 	}
 }
+
+func WithOrderBy(column string) relationshipFunc {
+	return func(q *orm.Query) (*orm.Query, error) {
+		return q.Order(column), nil
+	}
+}

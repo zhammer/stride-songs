@@ -129,7 +129,13 @@ func (c *cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlay
 	assert.NoError(c.t,
 		c.db.Model(&playlists).
 			Where("user_id = ?", user.ID).
-			Relation("Tracks").
+			// order by playlist_track.created_at so that our tests pass. this is just based
+			// on the internals of our mock spotify server (which returns the user's library
+			// in the order we set in our code) and our library sync implementation that adds
+			// the tracks from the library into the DB in the order that they came from spotify.
+			// basically: this may break and the better approach is that both arrays are sorted
+			// by spotify_id before comparing.
+			Relation("Tracks", internal.WithOrderBy("playlist_track.created_at")).
 			Select(),
 	)
 
