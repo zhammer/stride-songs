@@ -17,6 +17,24 @@ import (
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
+// spotify tracks
+var (
+	// bebey - theopilus london
+	bebey = spotify.AnalyzedTrack{Track: spotify.Track{ID: "7EZ8HvyKfad2vUIOivqjN5"}, Tempo: 164.044}
+	// cheat code - dap the contract
+	cheatCode = spotify.AnalyzedTrack{Track: spotify.Track{ID: "4buERRuDerqKP2g0GAOg4V"}, Tempo: 166.084}
+	// marilyn - mount kimbie
+	marilyn = spotify.AnalyzedTrack{Track: spotify.Track{ID: "5jJPcImQkogKdwsVS36zH7"}, Tempo: 179.826}
+	// if you call - angie mcmahon
+	ifYouCall = spotify.AnalyzedTrack{Track: spotify.Track{ID: "7J29qM3iwzKv83ZnTLdZ0v"}, Tempo: 106.704}
+)
+
+// spotify userIDs
+var (
+	zach        = "zach"
+	strideSongs = "stridesongs"
+)
+
 type cuke struct {
 	mockSpotify       *spotify.MockSpotify
 	mockSpotifyServer *httptest.Server
@@ -72,6 +90,13 @@ func (c *cuke) theFollowingUserExists(user *internal.User) {
 		if _, err := c.db.Model(user).Insert(); err != nil {
 			return err
 		}
+		for i := range user.Playlists {
+			playlist := &user.Playlists[i]
+			playlist.UserID = user.ID
+			if _, err := c.db.Model(playlist).Insert(); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 }
@@ -84,7 +109,7 @@ func (c *cuke) theFollowSpotifyUsersExist(userIDs []string) {
 
 func (c *cuke) theUserSetsTheirRefreshToken(user *internal.User, refreshToken string) {
 	c.noErr(func() error {
-		user.SpotifyRefreshToken = "zach:refresh-token"
+		user.SpotifyRefreshToken = refreshToken
 		if _, err := c.db.Model(user).Where("id = ?id").Update(); err != nil {
 			return err
 		}
@@ -185,6 +210,26 @@ func (c *cuke) theSpotifyUserHasTheFollowingPlaylists(userID string, expectedPla
 	}
 }
 
+func (c *cuke) theUserEmitsTheFollowingStrideEvents(user *internal.User, events *[]internal.StrideEvent) {
+	for _, event := range *events {
+		event.UserID = user.ID
+		_, err := c.db.Model(&event).Insert()
+		assert.NoError(c.t, err)
+
+		// this is a bit flaky. when we insert stride events to the db, hasura sends off an event trigger
+		// that handles responding to the stride events. given there's no mechanism at the moment to make sure
+		// those are processed serially, i'm adding a brief sleep between events. ideally event triggers will
+		// be fully processed w/in this time frame.
+		time.Sleep(250 * time.Millisecond)
+	}
+}
+
+func (c *cuke) WithT(t *testing.T) *cuke {
+	next := *c
+	next.t = t
+	return &next
+}
+
 func (c *cuke) given() *cuke {
 	return c
 }
@@ -199,22 +244,6 @@ func (c *cuke) and() *cuke {
 }
 
 func TestLibrarySync(t *testing.T) {
-	// spotify tracks
-	var (
-		// bebey - theopilus london
-		bebey = spotify.AnalyzedTrack{Track: spotify.Track{ID: "7EZ8HvyKfad2vUIOivqjN5"}, Tempo: 164.044}
-		// cheat code - dap the contract
-		cheatCode = spotify.AnalyzedTrack{Track: spotify.Track{ID: "4buERRuDerqKP2g0GAOg4V"}, Tempo: 166.084}
-		// marilyn - mount kimbie
-		marilyn = spotify.AnalyzedTrack{Track: spotify.Track{ID: "5jJPcImQkogKdwsVS36zH7"}, Tempo: 179.826}
-		// if you call - angie mcmahon
-		ifYouCall = spotify.AnalyzedTrack{Track: spotify.Track{ID: "7J29qM3iwzKv83ZnTLdZ0v"}, Tempo: 106.704}
-	)
-	// spotify userIDs
-	var (
-		zach        = "zach"
-		strideSongs = "stridesongs"
-	)
 	cuke := cuke{t: t}
 	after, err := cuke.before()
 	assert.NoError(t, err)
@@ -228,8 +257,8 @@ func TestLibrarySync(t *testing.T) {
 	// i'm not sure at the moment since we only have one test so for now i'm
 	// gonna leave it.
 	t.Run("user syncs their library with stride songs", func(t *testing.T) {
+		cuke.WithT(t)
 		cuke.beforeEach()
-
 		background()
 
 		cuke.given().theFollowSpotifyUsersExist([]string{zach})
@@ -271,5 +300,48 @@ func TestLibrarySync(t *testing.T) {
 }
 
 func TestStrideEvents(t *testing.T) {
-	t.Fatal("todo")
+	cuke := cuke{t: t}
+	after, err := cuke.before()
+	assert.NoError(t, err)
+	defer after()
+
+	background := func() {
+		cuke.given().theFollowSpotifyUsersExist([]string{strideSongs, zach})
+		user := internal.User{
+			SpotifyRefreshToken: zach + ":refresh-token",
+			LibrarySyncStatus:   internal.LibrarySyncStatusSucceeded,
+			Playlists: []internal.Playlist{
+				{
+					SPM:       125,
+					SpotifyID: "spm-playlist-125",
+				},
+				{
+					SPM:       130,
+					SpotifyID: "spm-playlist-130",
+				},
+			},
+		}
+		cuke.given().theFollowingUserExists(&user)
+	}
+
+	t.Run("start a stride", func(t *testing.T) {
+		cuke := cuke.WithT(t)
+		cuke.beforeEach()
+		// note: when background gets called, it doesn't use the cuke with the new t
+		// maybe should be func (c *cuke) run (background func(cuke *cuke))
+		// -> cuke.run(background)
+		background()
+
+		var user internal.User
+		assert.NoError(cuke.t, cuke.db.Model(&user).Select())
+
+		cuke.when().theUserEmitsTheFollowingStrideEvents(&user, &[]internal.StrideEvent{
+			{
+				Type:    internal.StrideEventTypeStart,
+				Payload: map[string]interface{}{"spm": 125},
+			},
+		})
+
+		assert.NoError(cuke.t, internal.ErrNotImplemented, "todo: check that spotify play status is updated")
+	})
 }

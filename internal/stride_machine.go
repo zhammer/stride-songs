@@ -35,11 +35,11 @@ func (sm *StrideMachine) HandleStrideEvent(ctx context.Context, event StrideEven
 	}
 
 	switch event.Type {
-	case strideEventTypeStart:
+	case StrideEventTypeStart:
 		return sm.handleStrideEventStart(ctx, event)
-	case strideEventTypeFinish:
+	case StrideEventTypeFinish:
 		return sm.handleStrideEventFinish(ctx, event)
-	case strideEventTypeSpmUpdate:
+	case StrideEventTypeSpmUpdate:
 		return sm.handleStrideEventSpmUpdate(ctx, event)
 	default:
 		return fmt.Errorf("unrecognized stride event type: %s", event.Type)

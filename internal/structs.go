@@ -48,13 +48,13 @@ func (u *User) PlaylistAtSPM(spm int) (*Playlist, bool) {
 type strideEventType string
 
 const (
-	strideEventTypeStart     = strideEventType("START")
-	strideEventTypeFinish    = strideEventType("FINISH")
-	strideEventTypeSpmUpdate = strideEventType("SPM_UPDATE")
+	StrideEventTypeStart     = strideEventType("START")
+	StrideEventTypeFinish    = strideEventType("FINISH")
+	StrideEventTypeSpmUpdate = strideEventType("SPM_UPDATE")
 )
 
 type StrideEvent struct {
-	Id      int
+	ID      int
 	UserID  int   `json:"user_id"`
 	User    *User `pg:"rel:has-one"`
 	Type    strideEventType
