@@ -231,6 +231,10 @@ func (c *cuke) theUserHasTheFollowingPlaybackState(userID string, expected *spot
 	assert.Equal(c.t, *expected, user.CurrentPlayback)
 }
 
+func (c *cuke) theUserWaitsFor(duration time.Duration) {
+	time.Sleep(duration)
+}
+
 func (c *cuke) WithT(t *testing.T) *cuke {
 	next := *c
 	next.t = t
@@ -348,6 +352,10 @@ func TestStrideEvents(t *testing.T) {
 				Payload: map[string]interface{}{"spm": 125},
 			},
 		})
+
+		// note: i'd like to find a good way to use assert.Eventually to wait for conditions
+		// rather than waiting (https://godoc.org/github.com/stretchr/testify/assert#Eventually)
+		cuke.and().theUserWaitsFor(750 * time.Millisecond)
 
 		cuke.then().theUserHasTheFollowingPlaybackState(zach, &spotify.CurrentPlayback{
 			IsPlaying:    true,

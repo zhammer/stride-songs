@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	gmux "github.com/gorilla/mux"
@@ -227,15 +228,59 @@ func (s *MockSpotify) Mux() http.Handler {
 	})
 
 	mux.HandleFunc("/v1/me/player/play", func(w http.ResponseWriter, r *http.Request) {
-		// TODO
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var data playRequest
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			fmt.Println(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		user.CurrentPlayback.IsPlaying = true
+		user.CurrentPlayback.Context.URI = data.ContextURI
+
+		w.WriteHeader(http.StatusNoContent)
 	}).Methods("PUT")
 
 	mux.HandleFunc("/v1/me/player/repeat", func(w http.ResponseWriter, r *http.Request) {
-		// TODO
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		state := repeatMode(r.URL.Query().Get("state"))
+		if state == "" {
+			http.Error(w, "missing 'state' query param", http.StatusBadRequest)
+			return
+		}
+
+		user.CurrentPlayback.RepeatState = state
+
+		w.WriteHeader(http.StatusNoContent)
 	}).Methods("PUT")
 
 	mux.HandleFunc("/v1/me/player/shuffle", func(w http.ResponseWriter, r *http.Request) {
-		// TODO
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		state, err := strconv.ParseBool(r.URL.Query().Get("state"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		user.CurrentPlayback.ShuffleState = state
+
+		w.WriteHeader(http.StatusNoContent)
 	}).Methods("PUT")
 
 	/*
