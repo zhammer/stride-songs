@@ -86,6 +86,17 @@ func (s *MockSpotify) Clear() {
 	s = &MockSpotify{}
 }
 
+func (s *MockSpotify) userFromRequest(r *http.Request) (*mockUser, error) {
+	token := r.Header.Get("Authorization")[7:]
+	parts := strings.Split(token, ":")
+	userID := parts[0]
+	user, ok := s.User(userID)
+	if !ok {
+		return nil, fmt.Errorf("user not found")
+	}
+	return user, nil
+}
+
 func (s *MockSpotify) Mux() http.Handler {
 	mux := gmux.NewRouter()
 
@@ -126,14 +137,9 @@ func (s *MockSpotify) Mux() http.Handler {
 	}).Methods("POST")
 
 	mux.HandleFunc("/v1/me/tracks", func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("Authorization")[7:]
-		parts := strings.Split(token, ":")
-		userID := parts[0]
-
-		user, ok := s.User(userID)
-		if !ok {
-			fmt.Println("missing user " + userID)
-			http.Error(w, "user not found", http.StatusInternalServerError)
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -155,14 +161,9 @@ func (s *MockSpotify) Mux() http.Handler {
 	})
 
 	mux.HandleFunc("/v1/audio-features", func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("Authorization")[7:]
-		parts := strings.Split(token, ":")
-		userID := parts[0]
-
-		_, ok := s.User(userID)
-		if !ok {
-			fmt.Println("missing user " + userID)
-			http.Error(w, "user not found", http.StatusInternalServerError)
+		_, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -192,13 +193,9 @@ func (s *MockSpotify) Mux() http.Handler {
 	mux.HandleFunc("/v1/playlists/{playlistID}/tracks", func(w http.ResponseWriter, r *http.Request) {
 		playlistID := gmux.Vars(r)["playlistID"]
 
-		token := r.Header.Get("Authorization")[7:]
-		parts := strings.Split(token, ":")
-		userID := parts[0]
-		user, ok := s.User(userID)
-		if !ok {
-			fmt.Println("missing user " + userID)
-			http.Error(w, "user not found", http.StatusInternalServerError)
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
