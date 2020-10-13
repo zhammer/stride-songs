@@ -96,3 +96,14 @@ func (p *PlayRequest) ToRequestPayload() *playRequest {
 type playRequest struct {
 	ContextURI string `json:"context_uri"`
 }
+
+type SpotifyContext struct {
+	URI string `json:"uri"`
+}
+
+type CurrentPlayback struct {
+	IsPlaying    bool           `json:"is_playing"`
+	ShuffleState bool           `json:"shuffle_state"`
+	RepeatState  repeatMode     `json:"repeat_state"`
+	Context      SpotifyContext `json:"context"`
+}

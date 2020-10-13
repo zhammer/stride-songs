@@ -16,9 +16,10 @@ type mockPlaylist struct {
 }
 
 type mockUser struct {
-	ID        string `json:"id"`
-	Playlists []mockPlaylist
-	Tracks    []*AnalyzedTrack
+	ID              string `json:"id"`
+	Playlists       []mockPlaylist
+	Tracks          []*AnalyzedTrack
+	CurrentPlayback CurrentPlayback
 }
 
 func (u *mockUser) Playlist(playlistID string) (*mockPlaylist, bool) {
@@ -224,6 +225,18 @@ func (s *MockSpotify) Mux() http.Handler {
 		playlist.Tracks = append(playlist.Tracks, tracks...)
 		w.WriteHeader(http.StatusCreated)
 	})
+
+	mux.HandleFunc("/v1/me/player/play", func(w http.ResponseWriter, r *http.Request) {
+		// TODO
+	}).Methods("PUT")
+
+	mux.HandleFunc("/v1/me/player/repeat", func(w http.ResponseWriter, r *http.Request) {
+		// TODO
+	}).Methods("PUT")
+
+	mux.HandleFunc("/v1/me/player/shuffle", func(w http.ResponseWriter, r *http.Request) {
+		// TODO
+	}).Methods("PUT")
 
 	/*
 	 * AUTH ROUTES

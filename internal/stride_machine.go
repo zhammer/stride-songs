@@ -48,6 +48,7 @@ func (sm *StrideMachine) HandleStrideEvent(ctx context.Context, event StrideEven
 
 func (sm *StrideMachine) handleStrideEventStart(ctx context.Context, event StrideEvent) error {
 	// pluck payload
+	// note: this can actually be StrideEvent.StartPayload()
 	payload := startPayload{}
 	if err := mapstructure.Decode(&event.Payload, &payload); err != nil {
 		return err

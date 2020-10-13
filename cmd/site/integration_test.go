@@ -224,6 +224,13 @@ func (c *cuke) theUserEmitsTheFollowingStrideEvents(user *internal.User, events 
 	}
 }
 
+func (c *cuke) theUserHasTheFollowingPlaybackState(userID string, expected *spotify.CurrentPlayback) {
+	user, ok := c.mockSpotify.User(userID)
+	assert.True(c.t, ok, "user not found")
+
+	assert.Equal(c.t, *expected, user.CurrentPlayback)
+}
+
 func (c *cuke) WithT(t *testing.T) *cuke {
 	next := *c
 	next.t = t
@@ -342,6 +349,13 @@ func TestStrideEvents(t *testing.T) {
 			},
 		})
 
-		assert.NoError(cuke.t, internal.ErrNotImplemented, "todo: check that spotify play status is updated")
+		cuke.then().theUserHasTheFollowingPlaybackState(zach, &spotify.CurrentPlayback{
+			IsPlaying:    true,
+			ShuffleState: true,
+			RepeatState:  spotify.RepeatModeContext,
+			Context: spotify.SpotifyContext{
+				URI: "spotify:playlist:spm-playlist-125",
+			},
+		})
 	})
 }
