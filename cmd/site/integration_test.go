@@ -236,7 +236,7 @@ func (c *Cuke) theUserEmitsTheFollowingStrideEvents(user *internal.User, events 
 		// that handles responding to the stride events. given there's no mechanism at the moment to make sure
 		// those are processed serially, i'm adding a brief sleep between events. ideally event triggers will
 		// be fully processed w/in this time frame.
-		time.Sleep(250 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
@@ -347,28 +347,68 @@ func TestStrideEvents(t *testing.T) {
 		cuke.given().theFollowingUserExists(&user)
 	})
 
-	cuke.Run("start a stride", func(t *testing.T, cuke *Cuke) {
-		var user internal.User
-		assert.NoError(cuke.t, cuke.db.Model(&user).Select())
-
-		cuke.when().theUserEmitsTheFollowingStrideEvents(&user, &[]internal.StrideEvent{
-			{
-				Type:    internal.StrideEventTypeStart,
-				Payload: map[string]interface{}{"spm": 125},
+	scenarios := []struct {
+		name             string
+		strideEvents     []internal.StrideEvent
+		expectedPlayback spotify.CurrentPlayback
+	}{
+		{
+			name: "start a stride",
+			strideEvents: []internal.StrideEvent{
+				{Type: internal.StrideEventTypeStart, Payload: map[string]interface{}{"spm": 125}},
 			},
-		})
-
-		// note: i'd like to find a good way to use assert.Eventually to wait for conditions
-		// rather than waiting (https://godoc.org/github.com/stretchr/testify/assert#Eventually)
-		cuke.and().theUserWaitsFor(750 * time.Millisecond)
-
-		cuke.then().theUserHasTheFollowingPlaybackState(zach, &spotify.CurrentPlayback{
-			IsPlaying:    true,
-			ShuffleState: true,
-			RepeatState:  spotify.RepeatModeContext,
-			Context: spotify.SpotifyContext{
-				URI: "spotify:playlist:spm-playlist-125",
+			expectedPlayback: spotify.CurrentPlayback{
+				IsPlaying:    true,
+				ShuffleState: true,
+				RepeatState:  spotify.RepeatModeContext,
+				Context: spotify.SpotifyContext{
+					URI: "spotify:playlist:spm-playlist-125",
+				},
 			},
+		},
+		{
+			name: "update spm",
+			strideEvents: []internal.StrideEvent{
+				{Type: internal.StrideEventTypeStart, Payload: map[string]interface{}{"spm": 125}},
+				{Type: internal.StrideEventTypeSpmUpdate, Payload: map[string]interface{}{"spm": 130}},
+			},
+			expectedPlayback: spotify.CurrentPlayback{
+				IsPlaying:    true,
+				ShuffleState: true,
+				RepeatState:  spotify.RepeatModeContext,
+				Context: spotify.SpotifyContext{
+					URI: "spotify:playlist:spm-playlist-130",
+				},
+			},
+		},
+		{
+			name: "update to unsupported spm",
+			strideEvents: []internal.StrideEvent{
+				{Type: internal.StrideEventTypeStart, Payload: map[string]interface{}{"spm": 125}},
+				// the user doesn't have a playlist for spm=70
+				{Type: internal.StrideEventTypeSpmUpdate, Payload: map[string]interface{}{"spm": 70}},
+			},
+			expectedPlayback: spotify.CurrentPlayback{
+				IsPlaying:    true,
+				ShuffleState: true,
+				RepeatState:  spotify.RepeatModeContext,
+				Context: spotify.SpotifyContext{
+					URI: "spotify:playlist:spm-playlist-125",
+				},
+			},
+		},
+	}
+
+	for _, scenario := range scenarios {
+		cuke.Run(scenario.name, func(t *testing.T, cuke *Cuke) {
+			var user internal.User
+			assert.NoError(cuke.t, cuke.db.Model(&user).Select())
+
+			cuke.when().theUserEmitsTheFollowingStrideEvents(&user, &scenario.strideEvents)
+
+			// flaky: could use something like assert.Eventually for the state assertions
+			// here. also could wait for hasura queue to be finished.
+			cuke.then().theUserHasTheFollowingPlaybackState(zach, &scenario.expectedPlayback)
 		})
-	})
+	}
 }

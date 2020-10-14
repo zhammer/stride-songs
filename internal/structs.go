@@ -92,7 +92,7 @@ func (s *StrideEvent) StartPayload() (StartPayload, error) {
 
 func (s *StrideEvent) SPMUpdatePayload() (SPMUpdatePayload, error) {
 	payload := SPMUpdatePayload{}
-	if s.Type != StrideEventTypeStart {
+	if s.Type != StrideEventTypeSpmUpdate {
 		return payload, fmt.Errorf("invalid type for SPMUpdatePayload: %s", s.Type)
 	}
 
