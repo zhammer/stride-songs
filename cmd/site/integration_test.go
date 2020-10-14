@@ -40,6 +40,7 @@ type Cuke struct {
 	mockSpotifyServer *httptest.Server
 	db                *pg.DB
 	t                 *testing.T
+	backgroundFn      *func(c *Cuke)
 }
 
 func (c *Cuke) before() (func(), error) {
@@ -69,6 +70,21 @@ func (c *Cuke) before() (func(), error) {
 	return func() {
 		c.mockSpotifyServer.Close()
 	}, nil
+}
+
+func (c *Cuke) Run(name string, f func(*testing.T, *Cuke)) {
+	c.t.Run(name, func(t *testing.T) {
+		cuke := c.WithT(t)
+		cuke.beforeEach()
+		if c.backgroundFn != nil {
+			(*c.backgroundFn)(cuke)
+		}
+		f(t, cuke)
+	})
+}
+
+func (c *Cuke) background(f func(c *Cuke)) {
+	c.backgroundFn = &f
 }
 
 func (c *Cuke) beforeEach() error {
@@ -260,18 +276,14 @@ func TestLibrarySync(t *testing.T) {
 	assert.NoError(t, err)
 	defer after()
 
-	background := func() {
+	cuke.background(func(cuke *Cuke) {
 		cuke.given().theFollowSpotifyUsersExist([]string{strideSongs})
-	}
+	})
 
 	// note: at the moment cuke doesn't take the new `t *testing.T` on a t.Run...
 	// i'm not sure at the moment since we only have one test so for now i'm
 	// gonna leave it.
-	t.Run("user syncs their library with stride songs", func(t *testing.T) {
-		cuke := cuke.WithT(t)
-		cuke.beforeEach()
-		background()
-
+	cuke.Run("user syncs their library with stride songs", func(t *testing.T, cuke *Cuke) {
 		cuke.given().theFollowSpotifyUsersExist([]string{zach})
 		cuke.and().theFollowingSpotifyTracksExist(&[]spotify.AnalyzedTrack{bebey, cheatCode, marilyn, ifYouCall})
 		cuke.and().theSpotifyUserHasTheFollowingTracks(zach, []string{bebey.ID, cheatCode.ID, marilyn.ID, ifYouCall.ID})
@@ -316,7 +328,7 @@ func TestStrideEvents(t *testing.T) {
 	assert.NoError(t, err)
 	defer after()
 
-	background := func() {
+	cuke.background(func(cuke *Cuke) {
 		cuke.given().theFollowSpotifyUsersExist([]string{strideSongs, zach})
 		user := internal.User{
 			SpotifyRefreshToken: zach + ":refresh-token",
@@ -333,16 +345,9 @@ func TestStrideEvents(t *testing.T) {
 			},
 		}
 		cuke.given().theFollowingUserExists(&user)
-	}
+	})
 
-	t.Run("start a stride", func(t *testing.T) {
-		cuke := cuke.WithT(t)
-		cuke.beforeEach()
-		// note: when background gets called, it doesn't use the cuke with the new t
-		// maybe should be func (c *Cuke) run (background func(cuke *cuke))
-		// -> cuke.run(background)
-		background()
-
+	cuke.Run("start a stride", func(t *testing.T, cuke *Cuke) {
 		var user internal.User
 		assert.NoError(cuke.t, cuke.db.Model(&user).Select())
 
