@@ -22,6 +22,24 @@
           name: playlist_tracks
 - table:
     schema: public
+    name: stride_event_types
+  is_enum: true
+- table:
+    schema: public
+    name: stride_events
+  event_triggers:
+  - name: stride_event
+    definition:
+      enable_manual: false
+      insert:
+        columns: '*'
+    retry_conf:
+      num_retries: 0
+      interval_sec: 10
+      timeout_sec: 60
+    webhook_from_env: EVENT_TRIGGER_STRIDE_EVENT
+- table:
+    schema: public
     name: users
   array_relationships:
   - name: playlists

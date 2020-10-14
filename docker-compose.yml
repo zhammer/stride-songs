@@ -30,15 +30,18 @@ services:
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: "startup, http-log, webhook-log, websocket-log, query-log"
 
       EVENT_TRIGGER_LIBRARY_SYNC: "http://stridesongs:3000/api/event_triggers/library_sync"
+      EVENT_TRIGGER_STRIDE_EVENT: "http://stridesongs:3000/api/event_triggers/stride_event"
 
   stridesongs:
-    image: golang:1.14
+    build:
+      context: .
+      dockerfile: air.Dockerfile
     ports:
       - "3000:3000"
     volumes:
       - .:/app
     working_dir: /app
-    command: go run ./cmd/site/
+    command: air -c .air.toml
     env_file: .env
 
 volumes:

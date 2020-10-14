@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	gmux "github.com/gorilla/mux"
@@ -16,9 +17,10 @@ type mockPlaylist struct {
 }
 
 type mockUser struct {
-	ID        string `json:"id"`
-	Playlists []mockPlaylist
-	Tracks    []*AnalyzedTrack
+	ID              string `json:"id"`
+	Playlists       []mockPlaylist
+	Tracks          []*AnalyzedTrack
+	CurrentPlayback CurrentPlayback
 }
 
 func (u *mockUser) Playlist(playlistID string) (*mockPlaylist, bool) {
@@ -86,6 +88,17 @@ func (s *MockSpotify) Clear() {
 	s = &MockSpotify{}
 }
 
+func (s *MockSpotify) userFromRequest(r *http.Request) (*mockUser, error) {
+	token := r.Header.Get("Authorization")[7:]
+	parts := strings.Split(token, ":")
+	userID := parts[0]
+	user, ok := s.User(userID)
+	if !ok {
+		return nil, fmt.Errorf("user not found")
+	}
+	return user, nil
+}
+
 func (s *MockSpotify) Mux() http.Handler {
 	mux := gmux.NewRouter()
 
@@ -126,14 +139,9 @@ func (s *MockSpotify) Mux() http.Handler {
 	}).Methods("POST")
 
 	mux.HandleFunc("/v1/me/tracks", func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("Authorization")[7:]
-		parts := strings.Split(token, ":")
-		userID := parts[0]
-
-		user, ok := s.User(userID)
-		if !ok {
-			fmt.Println("missing user " + userID)
-			http.Error(w, "user not found", http.StatusInternalServerError)
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -155,14 +163,9 @@ func (s *MockSpotify) Mux() http.Handler {
 	})
 
 	mux.HandleFunc("/v1/audio-features", func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("Authorization")[7:]
-		parts := strings.Split(token, ":")
-		userID := parts[0]
-
-		_, ok := s.User(userID)
-		if !ok {
-			fmt.Println("missing user " + userID)
-			http.Error(w, "user not found", http.StatusInternalServerError)
+		_, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -192,13 +195,9 @@ func (s *MockSpotify) Mux() http.Handler {
 	mux.HandleFunc("/v1/playlists/{playlistID}/tracks", func(w http.ResponseWriter, r *http.Request) {
 		playlistID := gmux.Vars(r)["playlistID"]
 
-		token := r.Header.Get("Authorization")[7:]
-		parts := strings.Split(token, ":")
-		userID := parts[0]
-		user, ok := s.User(userID)
-		if !ok {
-			fmt.Println("missing user " + userID)
-			http.Error(w, "user not found", http.StatusInternalServerError)
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -227,6 +226,62 @@ func (s *MockSpotify) Mux() http.Handler {
 		playlist.Tracks = append(playlist.Tracks, tracks...)
 		w.WriteHeader(http.StatusCreated)
 	})
+
+	mux.HandleFunc("/v1/me/player/play", func(w http.ResponseWriter, r *http.Request) {
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var data playRequest
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			fmt.Println(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		user.CurrentPlayback.IsPlaying = true
+		user.CurrentPlayback.Context.URI = data.ContextURI
+
+		w.WriteHeader(http.StatusNoContent)
+	}).Methods("PUT")
+
+	mux.HandleFunc("/v1/me/player/repeat", func(w http.ResponseWriter, r *http.Request) {
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		state := repeatMode(r.URL.Query().Get("state"))
+		if state == "" {
+			http.Error(w, "missing 'state' query param", http.StatusBadRequest)
+			return
+		}
+
+		user.CurrentPlayback.RepeatState = state
+
+		w.WriteHeader(http.StatusNoContent)
+	}).Methods("PUT")
+
+	mux.HandleFunc("/v1/me/player/shuffle", func(w http.ResponseWriter, r *http.Request) {
+		user, err := s.userFromRequest(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		state, err := strconv.ParseBool(r.URL.Query().Get("state"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		user.CurrentPlayback.ShuffleState = state
+
+		w.WriteHeader(http.StatusNoContent)
+	}).Methods("PUT")
 
 	/*
 	 * AUTH ROUTES

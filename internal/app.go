@@ -17,6 +17,10 @@ func (s *StrideSongs) LibrarySyncMachine() *LibrarySyncMachine {
 	return &LibrarySyncMachine{s}
 }
 
+func (s *StrideSongs) StrideMachine() *StrideMachine {
+	return &StrideMachine{s}
+}
+
 func WithSpotify(spotify *spotify.Client) StrideSongsOption {
 	return func(s *StrideSongs) {
 		s.spotify = spotify

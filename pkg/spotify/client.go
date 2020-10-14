@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/zhammer/stride-songs/pkg/chunk"
@@ -263,6 +264,92 @@ func (c *Client) CreatePlaylist(ctx context.Context, inp CreatePlaylistRequest, 
 	}
 
 	return &playlist, nil
+}
+
+func (c *Client) ToggleShuffle(ctx context.Context, shuffle bool, opts ...requestConfigOption) error {
+	cfg := c.requestConfig(opts)
+	accessToken, ok := cfg.accessTokenGetter(ctx)
+	if !ok {
+		return fmt.Errorf("must use context with accessToken")
+	}
+
+	req, err := http.NewRequest("PUT", c.base+"/v1/me/player/shuffle", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("authorization", "Bearer "+accessToken)
+	params := url.Values{}
+	params.Add("state", strconv.FormatBool(shuffle))
+	req.URL.RawQuery = params.Encode()
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (c *Client) SetRepeatMode(ctx context.Context, mode repeatMode, opts ...requestConfigOption) error {
+	cfg := c.requestConfig(opts)
+	accessToken, ok := cfg.accessTokenGetter(ctx)
+	if !ok {
+		return fmt.Errorf("must use context with accessToken")
+	}
+
+	req, err := http.NewRequest("PUT", c.base+"/v1/me/player/repeat", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("authorization", "Bearer "+accessToken)
+	params := url.Values{}
+	params.Add("state", string(mode))
+	req.URL.RawQuery = params.Encode()
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (c *Client) Play(ctx context.Context, inp PlayRequest, opts ...requestConfigOption) error {
+	cfg := c.requestConfig(opts)
+	accessToken, ok := cfg.accessTokenGetter(ctx)
+	if !ok {
+		return fmt.Errorf("must use context with accessToken")
+	}
+
+	buffer := &bytes.Buffer{}
+	if err := json.NewEncoder(buffer).Encode(inp.ToRequestPayload()); err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", c.base+"/v1/me/player/play", buffer)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("authorization", "Bearer "+accessToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 func (c *Client) AddTracksToPlaylist(ctx context.Context, inp AddTracksToPlaylistRequest, opts ...requestConfigOption) error {

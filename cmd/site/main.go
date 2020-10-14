@@ -190,5 +190,26 @@ func makeServer(cfg Config) http.Handler {
 		}
 	})
 
+	mux.HandleFunc("/api/event_triggers/stride_event", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		new := internal.StrideEvent{}
+		data := EventTriggerPayload{}
+		data.Event.Data.New = &new
+
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Printf("stride event: %+v\n", new)
+		if err := strideSongs.StrideMachine().HandleStrideEvent(r.Context(), new); err != nil {
+			fmt.Println(err)
+		}
+	})
+
 	return mux
 }

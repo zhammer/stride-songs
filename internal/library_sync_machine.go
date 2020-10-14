@@ -76,7 +76,7 @@ func (sm *LibrarySyncMachine) createPlaylists(ctx context.Context, old User, new
 
 		if _, err := tx.Model(&new).
 			Set("library_sync_status = ?", LibrarySyncStatusScanningLibrary).
-			Where("id = ?id").
+			WherePK().
 			Update(); err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func (sm *LibrarySyncMachine) scanLibrary(ctx context.Context, old User, new Use
 
 		if _, err := tx.Model(&new).
 			Set("library_sync_status = ?", LibrarySyncStatusAddingTracks).
-			Where("id = ?id").
+			WherePK().
 			Update(); err != nil {
 			return err
 		}
@@ -173,7 +173,7 @@ func (sm *LibrarySyncMachine) addTracks(ctx context.Context, old User, new User)
 
 		if _, err := tx.Model(&new).
 			Set("library_sync_status = ?", LibrarySyncStatusSucceeded).
-			Where("id = ?id").
+			WherePK().
 			Update(); err != nil {
 			return err
 		}
