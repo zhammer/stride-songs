@@ -268,7 +268,7 @@ func TestLibrarySync(t *testing.T) {
 	// i'm not sure at the moment since we only have one test so for now i'm
 	// gonna leave it.
 	t.Run("user syncs their library with stride songs", func(t *testing.T) {
-		cuke.WithT(t)
+		cuke := cuke.WithT(t)
 		cuke.beforeEach()
 		background()
 
