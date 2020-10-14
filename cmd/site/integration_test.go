@@ -110,7 +110,7 @@ func (c *cuke) theFollowSpotifyUsersExist(userIDs []string) {
 func (c *cuke) theUserSetsTheirRefreshToken(user *internal.User, refreshToken string) {
 	c.noErr(func() error {
 		user.SpotifyRefreshToken = refreshToken
-		if _, err := c.db.Model(user).Where("id = ?id").Update(); err != nil {
+		if _, err := c.db.Model(user).WherePK().Update(); err != nil {
 			return err
 		}
 		return nil
@@ -123,7 +123,7 @@ func (c *cuke) theUserWaitsForLibrarySyncToSucceed(user *internal.User) {
 		errCh := make(chan error, 1)
 		go func() {
 			for {
-				if err := c.db.Model(user).Where("id = ?id").Select(); err != nil {
+				if err := c.db.Model(user).WherePK().Select(); err != nil {
 					errCh <- err
 					return
 				}
