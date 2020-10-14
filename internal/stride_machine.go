@@ -4,24 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
 type StrideMachine struct {
 	*StrideSongs
-}
-
-// event-specific payloads
-
-type startPayload struct {
-	// spm to start stride at
-	SPM int `mapstructure:"spm"`
-}
-
-type spmUpdatePayload struct {
-	// new spm
-	SPM int `mapstructure:"spm"`
 }
 
 func (sm *StrideMachine) HandleStrideEvent(ctx context.Context, event StrideEvent) error {
@@ -47,10 +34,8 @@ func (sm *StrideMachine) HandleStrideEvent(ctx context.Context, event StrideEven
 }
 
 func (sm *StrideMachine) handleStrideEventStart(ctx context.Context, event StrideEvent) error {
-	// pluck payload
-	// note: this can actually be StrideEvent.StartPayload()
-	payload := startPayload{}
-	if err := mapstructure.Decode(&event.Payload, &payload); err != nil {
+	payload, err := event.StartPayload()
+	if err != nil {
 		return err
 	}
 
@@ -59,7 +44,7 @@ func (sm *StrideMachine) handleStrideEventStart(ctx context.Context, event Strid
 		return fmt.Errorf("no playlist for user %d found at spm %d", event.User.ID, payload.SPM)
 	}
 
-	ctx, err := sm.spotify.WithUserAccessToken(ctx, event.User.SpotifyRefreshToken)
+	ctx, err = sm.spotify.WithUserAccessToken(ctx, event.User.SpotifyRefreshToken)
 	if err != nil {
 		return nil
 	}
@@ -86,9 +71,8 @@ func (sm *StrideMachine) handleStrideEventFinish(ctx context.Context, event Stri
 }
 
 func (sm *StrideMachine) handleStrideEventSpmUpdate(ctx context.Context, event StrideEvent) error {
-	// pluck payload
-	payload := spmUpdatePayload{}
-	if err := mapstructure.Decode(&event.Payload, &payload); err != nil {
+	payload, err := event.SPMUpdatePayload()
+	if err != nil {
 		return err
 	}
 
@@ -97,7 +81,7 @@ func (sm *StrideMachine) handleStrideEventSpmUpdate(ctx context.Context, event S
 		return fmt.Errorf("no playlist for user %d found at spm %d", event.User.ID, payload.SPM)
 	}
 
-	ctx, err := sm.spotify.WithUserAccessToken(ctx, event.User.SpotifyRefreshToken)
+	ctx, err = sm.spotify.WithUserAccessToken(ctx, event.User.SpotifyRefreshToken)
 	if err != nil {
 		return nil
 	}

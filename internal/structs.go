@@ -1,6 +1,10 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/mitchellh/mapstructure"
+)
 
 type Playlist struct {
 	ID        int
@@ -59,4 +63,42 @@ type StrideEvent struct {
 	User    *User `pg:"rel:has-one"`
 	Type    strideEventType
 	Payload map[string]interface{}
+}
+
+// event-specific payloads
+
+type StartPayload struct {
+	// spm to start stride at
+	SPM int `mapstructure:"spm"`
+}
+
+type SPMUpdatePayload struct {
+	// new spm
+	SPM int `mapstructure:"spm"`
+}
+
+func (s *StrideEvent) StartPayload() (StartPayload, error) {
+	payload := StartPayload{}
+	if s.Type != StrideEventTypeStart {
+		return payload, fmt.Errorf("invalid type for StartPayload: %s", s.Type)
+	}
+
+	if err := mapstructure.Decode(&s.Payload, &payload); err != nil {
+		return payload, err
+	}
+
+	return payload, nil
+}
+
+func (s *StrideEvent) SPMUpdatePayload() (SPMUpdatePayload, error) {
+	payload := SPMUpdatePayload{}
+	if s.Type != StrideEventTypeStart {
+		return payload, fmt.Errorf("invalid type for SPMUpdatePayload: %s", s.Type)
+	}
+
+	if err := mapstructure.Decode(&s.Payload, &payload); err != nil {
+		return payload, err
+	}
+
+	return payload, nil
 }
