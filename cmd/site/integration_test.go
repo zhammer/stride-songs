@@ -35,14 +35,14 @@ var (
 	strideSongs = "stridesongs"
 )
 
-type cuke struct {
+type Cuke struct {
 	mockSpotify       *spotify.MockSpotify
 	mockSpotifyServer *httptest.Server
 	db                *pg.DB
 	t                 *testing.T
 }
 
-func (c *cuke) before() (func(), error) {
+func (c *Cuke) before() (func(), error) {
 	// setup mock spotify server
 	// need 0.0.0.0 binding for CI
 	l, err := net.Listen("tcp", "0.0.0.0:6000")
@@ -71,7 +71,7 @@ func (c *cuke) before() (func(), error) {
 	}, nil
 }
 
-func (c *cuke) beforeEach() error {
+func (c *Cuke) beforeEach() error {
 	if err := database.Clear(c.db); err != nil {
 		return err
 	}
@@ -81,11 +81,11 @@ func (c *cuke) beforeEach() error {
 	return nil
 }
 
-func (c *cuke) noErr(f func() error) {
+func (c *Cuke) noErr(f func() error) {
 	assert.NoError(c.t, f())
 }
 
-func (c *cuke) theFollowingUserExists(user *internal.User) {
+func (c *Cuke) theFollowingUserExists(user *internal.User) {
 	c.noErr(func() error {
 		if _, err := c.db.Model(user).Insert(); err != nil {
 			return err
@@ -101,13 +101,13 @@ func (c *cuke) theFollowingUserExists(user *internal.User) {
 	})
 }
 
-func (c *cuke) theFollowSpotifyUsersExist(userIDs []string) {
+func (c *Cuke) theFollowSpotifyUsersExist(userIDs []string) {
 	for _, id := range userIDs {
 		c.mockSpotify.AddUser(id)
 	}
 }
 
-func (c *cuke) theUserSetsTheirRefreshToken(user *internal.User, refreshToken string) {
+func (c *Cuke) theUserSetsTheirRefreshToken(user *internal.User, refreshToken string) {
 	c.noErr(func() error {
 		user.SpotifyRefreshToken = refreshToken
 		if _, err := c.db.Model(user).WherePK().Update(); err != nil {
@@ -117,7 +117,7 @@ func (c *cuke) theUserSetsTheirRefreshToken(user *internal.User, refreshToken st
 	})
 }
 
-func (c *cuke) theUserWaitsForLibrarySyncToSucceed(user *internal.User) {
+func (c *Cuke) theUserWaitsForLibrarySyncToSucceed(user *internal.User) {
 	c.noErr(func() error {
 		success := make(chan bool, 1)
 		errCh := make(chan error, 1)
@@ -149,7 +149,7 @@ func (c *cuke) theUserWaitsForLibrarySyncToSucceed(user *internal.User) {
 	})
 }
 
-func (c *cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlaylists *[]internal.Playlist) {
+func (c *Cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlaylists *[]internal.Playlist) {
 	var playlists []internal.Playlist
 	assert.NoError(c.t,
 		c.db.Model(&playlists).
@@ -183,15 +183,15 @@ func (c *cuke) theUserHasTheFollowingPlaylists(user *internal.User, expectedPlay
 	}
 }
 
-func (c *cuke) theFollowingSpotifyTracksExist(tracks *[]spotify.AnalyzedTrack) {
+func (c *Cuke) theFollowingSpotifyTracksExist(tracks *[]spotify.AnalyzedTrack) {
 	c.mockSpotify.AddTracks(*tracks)
 }
 
-func (c *cuke) theSpotifyUserHasTheFollowingTracks(userID string, trackIDs []string) {
+func (c *Cuke) theSpotifyUserHasTheFollowingTracks(userID string, trackIDs []string) {
 	assert.NoError(c.t, c.mockSpotify.AddUserTracks(userID, trackIDs))
 }
 
-func (c *cuke) theSpotifyUserHasTheFollowingPlaylists(userID string, expectedPlaylists *[]internal.Playlist) {
+func (c *Cuke) theSpotifyUserHasTheFollowingPlaylists(userID string, expectedPlaylists *[]internal.Playlist) {
 	user, ok := c.mockSpotify.User(userID)
 	assert.True(c.t, ok)
 
@@ -210,7 +210,7 @@ func (c *cuke) theSpotifyUserHasTheFollowingPlaylists(userID string, expectedPla
 	}
 }
 
-func (c *cuke) theUserEmitsTheFollowingStrideEvents(user *internal.User, events *[]internal.StrideEvent) {
+func (c *Cuke) theUserEmitsTheFollowingStrideEvents(user *internal.User, events *[]internal.StrideEvent) {
 	for _, event := range *events {
 		event.UserID = user.ID
 		_, err := c.db.Model(&event).Insert()
@@ -224,38 +224,38 @@ func (c *cuke) theUserEmitsTheFollowingStrideEvents(user *internal.User, events 
 	}
 }
 
-func (c *cuke) theUserHasTheFollowingPlaybackState(userID string, expected *spotify.CurrentPlayback) {
+func (c *Cuke) theUserHasTheFollowingPlaybackState(userID string, expected *spotify.CurrentPlayback) {
 	user, ok := c.mockSpotify.User(userID)
 	assert.True(c.t, ok, "user not found")
 
 	assert.Equal(c.t, *expected, user.CurrentPlayback)
 }
 
-func (c *cuke) theUserWaitsFor(duration time.Duration) {
+func (c *Cuke) theUserWaitsFor(duration time.Duration) {
 	time.Sleep(duration)
 }
 
-func (c *cuke) WithT(t *testing.T) *cuke {
+func (c *Cuke) WithT(t *testing.T) *Cuke {
 	next := *c
 	next.t = t
 	return &next
 }
 
-func (c *cuke) given() *cuke {
+func (c *Cuke) given() *Cuke {
 	return c
 }
-func (c *cuke) when() *cuke {
+func (c *Cuke) when() *Cuke {
 	return c
 }
-func (c *cuke) then() *cuke {
+func (c *Cuke) then() *Cuke {
 	return c
 }
-func (c *cuke) and() *cuke {
+func (c *Cuke) and() *Cuke {
 	return c
 }
 
 func TestLibrarySync(t *testing.T) {
-	cuke := cuke{t: t}
+	cuke := Cuke{t: t}
 	after, err := cuke.before()
 	assert.NoError(t, err)
 	defer after()
@@ -311,7 +311,7 @@ func TestLibrarySync(t *testing.T) {
 }
 
 func TestStrideEvents(t *testing.T) {
-	cuke := cuke{t: t}
+	cuke := Cuke{t: t}
 	after, err := cuke.before()
 	assert.NoError(t, err)
 	defer after()
@@ -339,7 +339,7 @@ func TestStrideEvents(t *testing.T) {
 		cuke := cuke.WithT(t)
 		cuke.beforeEach()
 		// note: when background gets called, it doesn't use the cuke with the new t
-		// maybe should be func (c *cuke) run (background func(cuke *cuke))
+		// maybe should be func (c *Cuke) run (background func(cuke *cuke))
 		// -> cuke.run(background)
 		background()
 
