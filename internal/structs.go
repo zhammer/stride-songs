@@ -34,6 +34,7 @@ type PlaylistTrack struct {
 type User struct {
 	ID                  int               `json:"id"`
 	SpotifyRefreshToken string            `json:"spotify_refresh_token"`
+	SpotifyUserID       string            `json:"spotify_user_id"`
 	LibrarySyncStatus   librarySyncStatus `json:"library_sync_status"`
 	Playlists           []Playlist        `pg:"rel:has-many"`
 }

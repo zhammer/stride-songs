@@ -1,2 +1,17 @@
+type Mutation {
+  DemoLogIn (
+    args: DemoLogInInput!
+  ): DemoLogInOutput
+}
 
+
+
+
+input DemoLogInInput {
+  spotify_authorization_code : String!
+}
+
+type DemoLogInOutput {
+  access_token : String!
+}
 

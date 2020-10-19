@@ -80,6 +80,11 @@ func (c *Client) WithUserAccessToken(ctx context.Context, refreshToken string) (
 	return ctx, nil
 }
 
+func (c *Client) WithUserAccessTokenDirect(ctx context.Context, accessToken string) (context.Context, error) {
+	ctx = withUserAccessToken(ctx, accessToken)
+	return ctx, nil
+}
+
 func (c *Client) Auth(ctx context.Context, authorizationCode string) (*AuthResponse, error) {
 	values := url.Values{
 		"grant_type":   []string{"authorization_code"},

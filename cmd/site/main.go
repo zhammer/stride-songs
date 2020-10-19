@@ -21,7 +21,7 @@ import (
 
 type Config struct {
 	Port                    int    `default:"3000"`
-	RedirectURI             string `default:"http://127.0.0.1:3000/callback"`
+	RedirectURI             string `envconfig:"redirect_uri" default:"http://127.0.0.1:3000/callback"`
 	DatabaseURL             string `envconfig:"database_url" required:"true"`
 	SpotifyClientID         string `envconfig:"spotify_client_id" required:"true"`
 	SpotifyClientSecret     string `envconfig:"spotify_client_secret" required:"true"`
@@ -236,6 +236,33 @@ func makeServer(cfg Config) http.Handler {
 		if err := strideSongs.StrideMachine().HandleStrideEvent(r.Context(), new); err != nil {
 			fmt.Println(err)
 		}
+	})
+
+	mux.HandleFunc("/api/actions/demo/login", func(w http.ResponseWriter, r *http.Request) {
+		data := ActionPayload{}
+		input := DemoLoginInput{}
+		data.Input = &input
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Printf("%+v\n", input.Args.SpotifyAuthorizationCode)
+
+		user, err := strideSongs.DemoLogIn(r.Context(), input.Args.SpotifyAuthorizationCode)
+		if err != nil {
+			graphqlError := GraphQLError{err.Error()}
+			body, _ := json.Marshal(graphqlError)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write(body)
+			return
+		}
+
+		output := DemoLogInOutput{
+			AccessToken: fmt.Sprintf("%d", user.ID),
+		}
+
+		body, _ := json.Marshal(output)
+		w.Write(body)
 	})
 
 	return mux

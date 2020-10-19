@@ -32,6 +32,8 @@ services:
       EVENT_TRIGGER_LIBRARY_SYNC: "http://stridesongs:3000/api/event_triggers/library_sync"
       EVENT_TRIGGER_STRIDE_EVENT: "http://stridesongs:3000/api/event_triggers/stride_event"
 
+      ACTION_DEMO_LOGIN: "http://stridesongs:3000/api/actions/demo/login"
+
   stridesongs:
     build:
       context: .
@@ -40,6 +42,8 @@ services:
       - "3000:3000"
     volumes:
       - .:/app
+      # https://stackoverflow.com/a/37898591
+      - /app/demo/
     working_dir: /app
     command: air -c .air.toml
     env_file: .env
