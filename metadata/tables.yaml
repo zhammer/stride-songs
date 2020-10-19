@@ -53,6 +53,8 @@
   - name: library_sync
     definition:
       enable_manual: false
+      insert:
+        columns: '*'
       update:
         columns:
         - library_sync_status
