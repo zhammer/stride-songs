@@ -35,11 +35,16 @@ type Config struct {
 type IndexPage struct {
 	SpotifyClientID string
 	RedirectURI     string
-	Scopes          []string
+	AdminScopes     []string
+	UserScopes      []string
 }
 
-func (i IndexPage) Scope() string {
-	return strings.Join(i.Scopes, " ")
+func (i IndexPage) AdminScope() string {
+	return strings.Join(i.AdminScopes, " ")
+}
+
+func (i IndexPage) UserScope() string {
+	return strings.Join(i.UserScopes, " ")
 }
 
 func main() {
@@ -106,12 +111,34 @@ func makeServer(cfg Config) http.Handler {
 		indexPage := IndexPage{
 			SpotifyClientID: cfg.SpotifyClientID,
 			RedirectURI:     cfg.RedirectURI,
-			Scopes: []string{
-				"user-read-playback-state",
-				"user-modify-playback-state",
-				"playlist-modify-public",
-				"playlist-modify-private",
-				"user-library-read",
+			AdminScopes: []string{
+				// we create our spm playlists on our admin account
+				string(spotify.ScopePlaylistModifyPrivate),
+				string(spotify.ScopePlaylistModifyPublic),
+			},
+			UserScopes: []string{
+				// we modify the user's playlist during runs
+				string(spotify.ScopeUserModifyPlaybackState),
+				// we read the user's library to generate SPM playlists
+				string(spotify.ScopeUserLibraryRead),
+				// we may eventually want to follow (either publicly or privately)
+				// the stride songs playlists created for our user on our user account
+				string(spotify.ScopePlaylistModifyPrivate),
+				string(spotify.ScopePlaylistModifyPublic),
+				// we may eventually want to read the user's playback history.
+				// (purpose: check if songs on an spm playlist were skipped during a run
+				// so that we can recommend those tracks be deleted)
+				string(spotify.ScopeUserReadRecentlyPlayed),
+				// we may eventually want to read the user's playback state
+				// (purpose: show the currently playing track within the stride songs app,
+				// allowing the user to trash it [skip and remove from playlist].)
+				string(spotify.ScopeUserReadPlaybackState),
+				// we may eventually want to use user's account data
+				// (purpose: email verification)
+				string(spotify.ScopeUserReadEmail),
+				// (purpose: alert that certain spotify API features only available with
+				// premium membership)
+				string(spotify.ScopeUserReadPrivate),
 			},
 		}
 		if err := tmpl.ExecuteTemplate(w, "index.html", indexPage); err != nil {

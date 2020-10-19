@@ -1,4 +1,15 @@
 <h1>Spotify Login</h1>
-<a href="https://accounts.spotify.com/authorize?client_id={{.SpotifyClientID}}&response_type=code&redirect_uri={{.RedirectURI}}&scope={{.Scope}}">
-    Login with spotify
-</a>
+<p>
+  <a
+    href="https://accounts.spotify.com/authorize?client_id={{.SpotifyClientID}}&response_type=code&redirect_uri={{.RedirectURI}}&scope={{.UserScope}}"
+  >
+    Login with spotify as User
+  </a>
+</p>
+<p>
+  <a
+    href="https://accounts.spotify.com/authorize?client_id={{.SpotifyClientID}}&response_type=code&redirect_uri={{.RedirectURI}}&scope={{.AdminScope}}"
+  >
+    Login with spotify as Admin
+  </a>
+</p>
