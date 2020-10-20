@@ -279,7 +279,17 @@ func makeServer(cfg Config) http.Handler {
 	})
 
 	mux.HandleFunc("/api/auth_hook", func(w http.ResponseWriter, r *http.Request) {
-		token := strings.TrimPrefix(r.Header.Get("authorization"), "Bearer ")
+		authHeader := r.Header.Get("authorization")
+		if authHeader == "" {
+			data := map[string]string{
+				"x-hasura-role": "unauthorized",
+			}
+			body, _ := json.Marshal(data)
+			w.Write(body)
+			return
+		}
+
+		token := strings.TrimPrefix(authHeader, "Bearer ")
 		fmt.Println(token)
 		if token == "" {
 			http.Error(w, "invalid bearer token", http.StatusUnauthorized)
