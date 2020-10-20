@@ -29,7 +29,7 @@ function LandingPage() {
   let { loggedIn } = useLogin();
   const authUrl = useMemo(makeAuthUrl, []);
   if (loggedIn) {
-    return <Redirect to="/simluation" />;
+    return <Redirect to="/simulation" />;
   }
   return (
     <div>

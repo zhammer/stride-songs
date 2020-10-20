@@ -54,7 +54,7 @@ function LoginComponent({ code }: { code: string }) {
     return <div>loading...</div>;
   }
   if (data) {
-    return <Redirect to="/simluation" />;
+    return <Redirect to="/simulation" />;
   }
   return <div></div>;
 }

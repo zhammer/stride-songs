@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -321,6 +322,8 @@ func (c *Client) SetRepeatMode(ctx context.Context, mode repeatMode, opts ...req
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
+		body, _ := ioutil.ReadAll(resp.Body)
+		fmt.Println(string(body))
 		return fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
 	}
 

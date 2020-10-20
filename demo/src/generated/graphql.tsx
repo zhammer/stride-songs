@@ -2823,6 +2823,35 @@ export type LoginMutation = (
   )> }
 );
 
+export type MeSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MeSubscription = (
+  { __typename?: 'subscription_root' }
+  & { users: Array<(
+    { __typename?: 'users' }
+    & Pick<Users, 'library_sync_status'>
+    & { playlists: Array<(
+      { __typename?: 'playlists' }
+      & Pick<Playlists, 'spm'>
+    )> }
+  )> }
+);
+
+export type InsertStrideEventMutationVariables = Exact<{
+  payload: Scalars['jsonb'];
+  type: Stride_Event_Types_Enum;
+}>;
+
+
+export type InsertStrideEventMutation = (
+  { __typename?: 'mutation_root' }
+  & { insert_stride_events?: Maybe<(
+    { __typename?: 'stride_events_mutation_response' }
+    & Pick<Stride_Events_Mutation_Response, 'affected_rows'>
+  )> }
+);
+
 
 export const IsUserLoggedInDocument = gql`
     query IsUserLoggedIn {
@@ -2886,3 +2915,67 @@ export function useLoginMutation(baseOptions?: Apollo.MutationHookOptions<LoginM
 export type LoginMutationHookResult = ReturnType<typeof useLoginMutation>;
 export type LoginMutationResult = Apollo.MutationResult<LoginMutation>;
 export type LoginMutationOptions = Apollo.BaseMutationOptions<LoginMutation, LoginMutationVariables>;
+export const MeDocument = gql`
+    subscription Me {
+  users {
+    library_sync_status
+    playlists(order_by: {spm: asc}) {
+      spm
+    }
+  }
+}
+    `;
+
+/**
+ * __useMeSubscription__
+ *
+ * To run a query within a React component, call `useMeSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useMeSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMeSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMeSubscription(baseOptions?: Apollo.SubscriptionHookOptions<MeSubscription, MeSubscriptionVariables>) {
+        return Apollo.useSubscription<MeSubscription, MeSubscriptionVariables>(MeDocument, baseOptions);
+      }
+export type MeSubscriptionHookResult = ReturnType<typeof useMeSubscription>;
+export type MeSubscriptionResult = Apollo.SubscriptionResult<MeSubscription>;
+export const InsertStrideEventDocument = gql`
+    mutation InsertStrideEvent($payload: jsonb!, $type: stride_event_types_enum!) {
+  insert_stride_events(objects: {payload: $payload, type: $type}) {
+    affected_rows
+  }
+}
+    `;
+export type InsertStrideEventMutationFn = Apollo.MutationFunction<InsertStrideEventMutation, InsertStrideEventMutationVariables>;
+
+/**
+ * __useInsertStrideEventMutation__
+ *
+ * To run a mutation, you first call `useInsertStrideEventMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useInsertStrideEventMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [insertStrideEventMutation, { data, loading, error }] = useInsertStrideEventMutation({
+ *   variables: {
+ *      payload: // value for 'payload'
+ *      type: // value for 'type'
+ *   },
+ * });
+ */
+export function useInsertStrideEventMutation(baseOptions?: Apollo.MutationHookOptions<InsertStrideEventMutation, InsertStrideEventMutationVariables>) {
+        return Apollo.useMutation<InsertStrideEventMutation, InsertStrideEventMutationVariables>(InsertStrideEventDocument, baseOptions);
+      }
+export type InsertStrideEventMutationHookResult = ReturnType<typeof useInsertStrideEventMutation>;
+export type InsertStrideEventMutationResult = Apollo.MutationResult<InsertStrideEventMutation>;
+export type InsertStrideEventMutationOptions = Apollo.BaseMutationOptions<InsertStrideEventMutation, InsertStrideEventMutationVariables>;
