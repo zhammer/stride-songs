@@ -181,13 +181,17 @@ function Runner({ spm = null }: { spm: number | null }) {
           if (active) {
             return (
               <div key={i} className="transform -scale-x-1">
-                🏃
+                <span role="img" aria-label="runner">
+                  🏃
+                </span>
               </div>
             );
           }
           return (
             <div key={i} className="opacity-75">
-              🎶
+              <span role="img" aria-label="music note">
+                🎶
+              </span>
             </div>
           );
         })}
