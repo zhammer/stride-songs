@@ -4,12 +4,16 @@ import { BrowserRouter, Route, Switch } from "react-router-dom";
 import CallbackPage from "./pages/CallbackPage";
 import { ApolloProvider } from "@apollo/client";
 import client from "./apolloClient";
+import SimulatorPage from "./pages/SimulatorPage";
 
 function App() {
   return (
     <ApolloProvider client={client}>
       <BrowserRouter>
         <Switch>
+          <Route path="/simulation">
+            <SimulatorPage />
+          </Route>
           <Route path="/callback">
             <CallbackPage />
           </Route>

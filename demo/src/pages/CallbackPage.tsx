@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { gql } from "@apollo/client";
 import { Redirect, useLocation } from "react-router-dom";
 import { useLoginMutation } from "../generated/graphql";
+import { IS_LOGGED_IN } from "../apolloClient";
+import useLogin from "../hooks/useLogin";
 
 const _LoginMutation = gql`
   mutation Login($spotify_authorization_code: String!) {
@@ -14,8 +16,12 @@ const _LoginMutation = gql`
 `;
 
 function CallbackPage() {
+  let { loggedIn } = useLogin();
   let location = useLocation();
   let code = new URLSearchParams(location.search).get("code");
+  if (loggedIn) {
+    return <Redirect to="/simulation" />;
+  }
   if (!code) {
     return <Redirect to="/" />;
   }
@@ -31,6 +37,7 @@ function LoginComponent({ code }: { code: string }) {
     onCompleted: (data) => {
       if (data && data.DemoLogIn) {
         localStorage.setItem("token", data.DemoLogIn.access_token);
+        client.writeQuery({ query: IS_LOGGED_IN, data: { isLoggedIn: true } });
       }
     },
   });
@@ -40,14 +47,14 @@ function LoginComponent({ code }: { code: string }) {
     }
   }, [mutation, called]);
 
-  if (data) {
-    return <div>{JSON.stringify(data)}</div>;
+  if (error) {
+    return <div>{error.message}</div>;
   }
   if (loading) {
     return <div>loading...</div>;
   }
-  if (error) {
-    return <div>{error.message}</div>;
+  if (data) {
+    return <Redirect to="/simluation" />;
   }
   return <div></div>;
 }

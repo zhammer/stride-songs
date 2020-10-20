@@ -2797,6 +2797,19 @@ export type Users_Variance_Order_By = {
 };
 
 
+export type Query = {
+  __typename?: 'Query';
+  isLoggedIn: Scalars['Boolean'];
+};
+
+export type IsUserLoggedInQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type IsUserLoggedInQuery = (
+  { __typename?: 'Query' }
+  & Pick<Query, 'isLoggedIn'>
+);
+
 export type LoginMutationVariables = Exact<{
   spotify_authorization_code: Scalars['String'];
 }>;
@@ -2811,6 +2824,36 @@ export type LoginMutation = (
 );
 
 
+export const IsUserLoggedInDocument = gql`
+    query IsUserLoggedIn {
+  isLoggedIn @client
+}
+    `;
+
+/**
+ * __useIsUserLoggedInQuery__
+ *
+ * To run a query within a React component, call `useIsUserLoggedInQuery` and pass it any options that fit your needs.
+ * When your component renders, `useIsUserLoggedInQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useIsUserLoggedInQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useIsUserLoggedInQuery(baseOptions?: Apollo.QueryHookOptions<IsUserLoggedInQuery, IsUserLoggedInQueryVariables>) {
+        return Apollo.useQuery<IsUserLoggedInQuery, IsUserLoggedInQueryVariables>(IsUserLoggedInDocument, baseOptions);
+      }
+export function useIsUserLoggedInLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<IsUserLoggedInQuery, IsUserLoggedInQueryVariables>) {
+          return Apollo.useLazyQuery<IsUserLoggedInQuery, IsUserLoggedInQueryVariables>(IsUserLoggedInDocument, baseOptions);
+        }
+export type IsUserLoggedInQueryHookResult = ReturnType<typeof useIsUserLoggedInQuery>;
+export type IsUserLoggedInLazyQueryHookResult = ReturnType<typeof useIsUserLoggedInLazyQuery>;
+export type IsUserLoggedInQueryResult = Apollo.QueryResult<IsUserLoggedInQuery, IsUserLoggedInQueryVariables>;
 export const LoginDocument = gql`
     mutation Login($spotify_authorization_code: String!) {
   DemoLogIn(args: {spotify_authorization_code: $spotify_authorization_code}) {

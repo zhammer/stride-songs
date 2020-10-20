@@ -1,4 +1,6 @@
 import React, { useMemo } from "react";
+import { Redirect } from "react-router-dom";
+import useLogin from "../hooks/useLogin";
 
 function makeAuthUrl(): string {
   let url = new URL("https://accounts.spotify.com/authorize");
@@ -24,7 +26,11 @@ function makeAuthUrl(): string {
 }
 
 function LandingPage() {
+  let { loggedIn } = useLogin();
   const authUrl = useMemo(makeAuthUrl, []);
+  if (loggedIn) {
+    return <Redirect to="/simluation" />;
+  }
   return (
     <div>
       <header>
