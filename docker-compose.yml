@@ -28,6 +28,8 @@ services:
       HASURA_GRAPHQL_DEV_MODE: "true"
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: "startup, http-log, webhook-log, websocket-log, query-log"
+      HASURA_GRAPHQL_AUTH_HOOK: "http://stridesongs:3000/api/auth_hook"
+      HASURA_GRAPHQL_ADMIN_SECRET: admin
 
       EVENT_TRIGGER_LIBRARY_SYNC: "http://stridesongs:3000/api/event_triggers/library_sync"
       EVENT_TRIGGER_STRIDE_EVENT: "http://stridesongs:3000/api/event_triggers/stride_event"

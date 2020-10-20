@@ -16,6 +16,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 
 	"github.com/zhammer/stride-songs/internal"
+	"github.com/zhammer/stride-songs/pkg/jwt"
 	"github.com/zhammer/stride-songs/pkg/spotify"
 )
 
@@ -27,6 +28,7 @@ type Config struct {
 	SpotifyClientSecret     string `envconfig:"spotify_client_secret" required:"true"`
 	StrideSongsRefreshToken string `envconfig:"stride_songs_refresh_token" required:"true"`
 	StrideSongsUserID       string `envconfig:"stride_songs_user_id" required:"true"`
+	JWTSecret               string `envconfig:"jwt_secret" required:"true"`
 
 	// test only
 	SpotifyOverrideURL string `envconfig:"spotify_override_url"`
@@ -70,6 +72,8 @@ func makeServer(cfg Config) http.Handler {
 			return string(bytes), nil
 		},
 	}).ParseGlob("templates/*.html"))
+
+	jwtClient := jwt.Client{Secret: []byte(cfg.JWTSecret)}
 
 	spotifyOptions := []spotify.ClientOption{
 		spotify.WithClientID(cfg.SpotifyClientID),
@@ -257,11 +261,44 @@ func makeServer(cfg Config) http.Handler {
 			return
 		}
 
+		accessToken, err := jwtClient.Build(*user)
+		if err != nil {
+			graphqlError := GraphQLError{err.Error()}
+			body, _ := json.Marshal(graphqlError)
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write(body)
+			return
+		}
+
 		output := DemoLogInOutput{
-			AccessToken: fmt.Sprintf("%d", user.ID),
+			AccessToken: accessToken,
 		}
 
 		body, _ := json.Marshal(output)
+		w.Write(body)
+	})
+
+	mux.HandleFunc("/api/auth_hook", func(w http.ResponseWriter, r *http.Request) {
+		token := strings.TrimPrefix(r.Header.Get("authorization"), "Bearer ")
+		fmt.Println(token)
+		if token == "" {
+			http.Error(w, "invalid bearer token", http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := jwtClient.Parse(token)
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		data := map[string]string{
+			"x-hasura-user-id": strconv.Itoa(claims.XHasuraUserID),
+			"x-hasura-role":    claims.XHasuraRole,
+		}
+
+		body, _ := json.Marshal(data)
 		w.Write(body)
 	})
 
