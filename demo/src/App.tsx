@@ -5,6 +5,7 @@ import CallbackPage from "./pages/CallbackPage";
 import { ApolloProvider } from "@apollo/client";
 import client from "./apolloClient";
 import SimulatorPage from "./pages/SimulatorPage";
+import "./assets/main.css";
 
 function App() {
   return (

@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Redirect } from "react-router-dom";
+import { Header, Main, Page } from "../components/Layout";
 import useLogin from "../hooks/useLogin";
 
 function makeAuthUrl(): string {
@@ -32,17 +33,25 @@ function LandingPage() {
     return <Redirect to="/simulation" />;
   }
   return (
-    <div>
-      <header>
-        <h1>Stride Songs</h1>
-        <p>
-          <i>Sync your runs to your favorite spotify tracks.</i>
-        </p>
-      </header>
-      <main>
-        <a href={authUrl}>Log in with spotify</a>
-      </main>
-    </div>
+    <Page>
+      <Header
+        title={<>Stride Songs 🏃🎶</>}
+        subtitle={
+          <>
+            Sync your runs to your favorite{" "}
+            <span className="text-green-500">Spotify</span> tracks
+          </>
+        }
+      />
+      <Main>
+        <a
+          className="bg-green-500 hover:bg-green-700 text-white rounded py-1 px-2"
+          href={authUrl}
+        >
+          Log in with spotify
+        </a>
+      </Main>
+    </Page>
   );
 }
 export default LandingPage;

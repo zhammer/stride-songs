@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
 import { gql } from "@apollo/client";
-import { Redirect, useLocation } from "react-router-dom";
+import { Link, Redirect, useLocation } from "react-router-dom";
 import { useLoginMutation } from "../generated/graphql";
 import { IS_LOGGED_IN } from "../apolloClient";
 import useLogin from "../hooks/useLogin";
+import { Header, Page } from "../components/Layout";
 
 const _LoginMutation = gql`
   mutation Login($spotify_authorization_code: String!) {
@@ -31,9 +32,7 @@ function CallbackPage() {
 function LoginComponent({ code }: { code: string }) {
   let [mutation, { data, loading, error, called, client }] = useLoginMutation({
     variables: { spotify_authorization_code: code },
-    onError: (error) => {
-      alert(error.message);
-    },
+    onError: (error) => {},
     onCompleted: (data) => {
       if (data && data.DemoLogIn) {
         localStorage.setItem("token", data.DemoLogIn.access_token);
@@ -47,16 +46,40 @@ function LoginComponent({ code }: { code: string }) {
     }
   }, [mutation, called]);
 
-  if (error) {
-    return <div>{error.message}</div>;
-  }
-  if (loading) {
-    return <div>loading...</div>;
-  }
-  if (data) {
+  if (data?.DemoLogIn?.access_token) {
     return <Redirect to="/simulation" />;
   }
-  return <div></div>;
+  return (
+    <Page>
+      {loading && (
+        <Header
+          title={
+            <div className="flex">
+              Logging in...<div className="animate-bounce"> 🏃🎶</div>
+            </div>
+          }
+          subtitle={<>Please wait while we log you into stride songs</>}
+        />
+      )}
+      {error && (
+        <Header
+          title={
+            <div className="flex">
+              Error logging in!<div className="animate-pulse"> 🏃🎶</div>
+            </div>
+          }
+          subtitle={
+            <span className="text-red-500">
+              {error.message}{" "}
+              <Link className="underline" to="/">
+                (try again?)
+              </Link>
+            </span>
+          }
+        />
+      )}
+    </Page>
+  );
 }
 
 export default CallbackPage;

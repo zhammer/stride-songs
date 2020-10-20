@@ -290,7 +290,6 @@ func makeServer(cfg Config) http.Handler {
 		}
 
 		token := strings.TrimPrefix(authHeader, "Bearer ")
-		fmt.Println(token)
 		if token == "" {
 			http.Error(w, "invalid bearer token", http.StatusUnauthorized)
 			return
