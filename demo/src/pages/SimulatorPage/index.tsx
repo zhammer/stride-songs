@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 import React, { useEffect, useState } from "react";
 import { Redirect } from "react-router-dom";
+import Alert from "../../components/Alert";
 import { Header, Main } from "../../components/Layout";
 import {
   Library_Sync_Statuses_Enum,
@@ -59,7 +60,8 @@ function SimulatorPage() {
         }
         subtitle={
           <>
-            Until the Stride Songs native application is out, you can use this
+            Until the Stride Songs native application (which will automatically
+            detect changes in your strides per minute) is out, you can use this
             simulator to manually sync your runs to your Spotify library.
           </>
         }
@@ -170,24 +172,35 @@ function Runner({ spm = null }: { spm: number | null }) {
     }
   }, [setSpots, spm]);
   return (
-    <div
-      aria-hidden={true}
-      className="pointer-events-none text-5xl mt-2 flex bg-green-200 border-green-600 border-4 rounded-2xl max-w-lg justify-between px-5 py-2"
-    >
-      {spots.map((active, i) => {
-        if (active) {
+    <div className="max-w-lg">
+      <div
+        aria-hidden={true}
+        className="pointer-events-none text-5xl mt-2 flex bg-green-200 border-green-600 border-4 rounded-2xl justify-between px-5 py-2"
+      >
+        {spots.map((active, i) => {
+          if (active) {
+            return (
+              <div key={i} className="transform -scale-x-1">
+                🏃
+              </div>
+            );
+          }
           return (
-            <div key={i} className="transform -scale-x-1">
-              🏃
+            <div key={i} className="opacity-75">
+              🎶
             </div>
           );
-        }
-        return (
-          <div key={i} className="opacity-75">
-            🎶
-          </div>
-        );
-      })}
+        })}
+      </div>
+      {spm && (
+        <Alert>
+          Our virtual runner is running at exactly{" "}
+          <span className="font-bold">{spm}</span> strides per minute, but our
+          track's SPM may not be that exact. As humans, we would naturally sync
+          with the minor SPM discrepancies. Our virtual runner, on the other
+          hand, is... not as adaptable.
+        </Alert>
+      )}
     </div>
   );
 }
@@ -279,6 +292,14 @@ function Simulator({ data }: { data: MeSubscription }) {
               {status === "running" && "Update SPM"}
             </button>
           </div>
+          {status === "idle" && (
+            <Alert>
+              <p>
+                Make sure Spotify is active on your device before clicking
+                "Start Run".
+              </p>
+            </Alert>
+          )}
         </div>
       </form>
       <Runner spm={spm} />
