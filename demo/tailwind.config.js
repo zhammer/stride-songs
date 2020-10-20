@@ -9,6 +9,9 @@ module.exports = {
       spacing: {
         7: "1.75rem",
       },
+      scale: {
+        "-1": "-1",
+      },
     },
   },
   variants: {},
