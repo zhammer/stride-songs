@@ -20,9 +20,11 @@ export const IS_LOGGED_IN = gql`
   }
 `;
 
-const httpLink = createHttpLink({ uri: "http://localhost:8080/v1/graphql" });
+const httpLink = createHttpLink({
+  uri: process.env.REACT_APP_HASURA_ENDPOINT_HTTP as string,
+});
 const wsLink = new WebSocketLink({
-  uri: "ws://localhost:8080/v1/graphql",
+  uri: process.env.REACT_APP_HASURA_ENDPOINT_WS as string,
   options: {
     reconnect: true,
     // VERY important that lazy=true (connects only when first subscription created,
