@@ -1,6 +1,14 @@
-actions: []
+actions:
+- name: DemoLogIn
+  definition:
+    kind: synchronous
+    handler: '{{ACTION_DEMO_LOGIN}}'
+  permissions:
+  - role: unauthorized
 custom_types:
   enums: []
-  input_objects: []
-  objects: []
+  input_objects:
+  - name: DemoLogInInput
+  objects:
+  - name: DemoLogInOutput
   scalars: []

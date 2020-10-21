@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -77,6 +78,11 @@ func (c *Client) WithUserAccessToken(ctx context.Context, refreshToken string) (
 	}
 
 	ctx = withUserAccessToken(ctx, auth.AccessToken)
+	return ctx, nil
+}
+
+func (c *Client) WithUserAccessTokenDirect(ctx context.Context, accessToken string) (context.Context, error) {
+	ctx = withUserAccessToken(ctx, accessToken)
 	return ctx, nil
 }
 
@@ -316,6 +322,8 @@ func (c *Client) SetRepeatMode(ctx context.Context, mode repeatMode, opts ...req
 	}
 
 	if resp.StatusCode != http.StatusNoContent {
+		body, _ := ioutil.ReadAll(resp.Body)
+		fmt.Println(string(body))
 		return fmt.Errorf("unexpected status code from spotify: %d", resp.StatusCode)
 	}
 

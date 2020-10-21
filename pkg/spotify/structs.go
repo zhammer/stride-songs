@@ -5,6 +5,19 @@ import (
 	"fmt"
 )
 
+type scope string
+
+const (
+	ScopePlaylistModifyPrivate   = scope("playlist-modify-private")
+	ScopePlaylistModifyPublic    = scope("playlist-modify-public")
+	ScopeUserReadPlaybackState   = scope("user-read-playback-state")
+	ScopeUserModifyPlaybackState = scope("user-modify-playback-state")
+	ScopeUserLibraryRead         = scope("user-library-read")
+	ScopeUserReadRecentlyPlayed  = scope("user-read-recently-played")
+	ScopeUserReadEmail           = scope("user-read-email")
+	ScopeUserReadPrivate         = scope("user-read-private")
+)
+
 type requestConfigOption func(r *requestConfig)
 
 type requestConfig struct {

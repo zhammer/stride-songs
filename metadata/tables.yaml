@@ -9,6 +9,23 @@
 - table:
     schema: public
     name: playlist_tracks
+  object_relationships:
+  - name: playlist
+    using:
+      foreign_key_constraint_on: playlist_id
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - playlist_id
+      - spotify_id
+      - status
+      - created_at
+      - updated_at
+      filter:
+        playlist:
+          user_id:
+            _eq: X-Hasura-User-Id
 - table:
     schema: public
     name: playlists
@@ -20,6 +37,19 @@
         table:
           schema: public
           name: playlist_tracks
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - user_id
+      - spotify_id
+      - spm
+      - created_at
+      - updated_at
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
 - table:
     schema: public
     name: stride_event_types
@@ -27,6 +57,16 @@
 - table:
     schema: public
     name: stride_events
+  insert_permissions:
+  - role: user
+    permission:
+      check: {}
+      set:
+        user_id: x-hasura-User-Id
+      columns:
+      - payload
+      - type
+      backend_only: false
   event_triggers:
   - name: stride_event
     definition:
@@ -49,10 +89,25 @@
         table:
           schema: public
           name: playlists
+  select_permissions:
+  - role: user
+    permission:
+      columns:
+      - id
+      - spotify_refresh_token
+      - created_at
+      - updated_at
+      - library_sync_status
+      - spotify_user_id
+      filter:
+        id:
+          _eq: X-Hasura-User-Id
   event_triggers:
   - name: library_sync
     definition:
       enable_manual: false
+      insert:
+        columns: '*'
       update:
         columns:
         - library_sync_status

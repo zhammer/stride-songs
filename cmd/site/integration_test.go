@@ -290,6 +290,7 @@ func TestLibrarySync(t *testing.T) {
 
 		user := internal.User{
 			LibrarySyncStatus: internal.LibrarySyncStatusPendingRefreshToken,
+			SpotifyUserID:     zach,
 		}
 		cuke.and().theFollowingUserExists(&user)
 
@@ -332,6 +333,7 @@ func TestStrideEvents(t *testing.T) {
 		cuke.given().theFollowSpotifyUsersExist([]string{strideSongs, zach})
 		user := internal.User{
 			SpotifyRefreshToken: zach + ":refresh-token",
+			SpotifyUserID:       zach,
 			LibrarySyncStatus:   internal.LibrarySyncStatusSucceeded,
 			Playlists: []internal.Playlist{
 				{
