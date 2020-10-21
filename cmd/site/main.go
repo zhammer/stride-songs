@@ -215,10 +215,12 @@ func makeServer(cfg Config) http.Handler {
 			return
 		}
 
-		fmt.Println(old.LibrarySyncStatus + " -> " + new.LibrarySyncStatus)
-		if err := strideSongs.LibrarySyncMachine().HandleStateUpdate(r.Context(), old, new); err != nil {
-			fmt.Println(err)
-		}
+		go func() {
+			fmt.Println(old.LibrarySyncStatus + " -> " + new.LibrarySyncStatus)
+			if err := strideSongs.LibrarySyncMachine().HandleStateUpdate(context.Background(), old, new); err != nil {
+				fmt.Println(err)
+			}
+		}()
 	})
 
 	mux.HandleFunc("/api/event_triggers/stride_event", func(w http.ResponseWriter, r *http.Request) {
