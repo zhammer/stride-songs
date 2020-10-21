@@ -36,17 +36,10 @@ const _StrideEventMutation = gql`
 
 function SimulatorPage() {
   let { loggedIn } = useLogin();
-  let { data, loading } = useMeSubscription();
+  let { data } = useMeSubscription();
   if (!loggedIn) {
     return <Redirect to="/" />;
   }
-  if (loading) {
-    return <div>{loading}</div>;
-  }
-  if (!data?.users) {
-    return <div>users is empty</div>;
-  }
-  let user = data.users[0];
   return (
     <div>
       <Header
@@ -67,9 +60,12 @@ function SimulatorPage() {
         }
       />
       <Main>
-        <Syncing data={data} />
-        {user.library_sync_status === Library_Sync_Statuses_Enum.Succeeded && (
-          <Simulator data={data} />
+        {data?.users.length === 1 && (
+          <>
+            <Syncing data={data} />
+            {data.users[0].library_sync_status ===
+              Library_Sync_Statuses_Enum.Succeeded && <Simulator data={data} />}
+          </>
         )}
       </Main>
     </div>
