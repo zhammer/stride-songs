@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Redirect } from "react-router-dom";
+import { MusicEmoji, RunnerEmoji } from "../components/Emojis";
 import { Header, Main, Page } from "../components/Layout";
 import useLogin from "../hooks/useLogin";
 
@@ -35,7 +36,12 @@ function LandingPage() {
   return (
     <Page>
       <Header
-        title={<>Stride Songs 🏃🎶</>}
+        title={
+          <>
+            Stride Songs <RunnerEmoji />
+            <MusicEmoji />
+          </>
+        }
         subtitle={
           <>
             Sync your runs to your favorite{" "}

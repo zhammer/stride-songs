@@ -4,6 +4,7 @@ import { Link, Redirect, useLocation } from "react-router-dom";
 import { useLoginMutation } from "../generated/graphql";
 import { IS_LOGGED_IN } from "../apolloClient";
 import { Header, Page } from "../components/Layout";
+import { MusicEmoji, RunnerEmoji } from "../components/Emojis";
 
 const _LoginMutation = gql`
   mutation Login($spotify_authorization_code: String!) {
@@ -50,7 +51,12 @@ function LoginComponent({ code }: { code: string }) {
         <Header
           title={
             <div className="flex">
-              Logging in...<div className="animate-bounce"> 🏃🎶</div>
+              Logging in...
+              <div className="animate-bounce">
+                {" "}
+                <RunnerEmoji />
+                <MusicEmoji />
+              </div>
             </div>
           }
           subtitle={<>Please wait while we log you into stride songs</>}
@@ -60,7 +66,12 @@ function LoginComponent({ code }: { code: string }) {
         <Header
           title={
             <div className="flex">
-              Error logging in!<div className="animate-pulse"> 🏃🎶</div>
+              Error logging in!
+              <div className="animate-pulse">
+                {" "}
+                <RunnerEmoji />
+                <MusicEmoji />
+              </div>
             </div>
           }
           subtitle={

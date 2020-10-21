@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 import React, { useEffect, useState } from "react";
 import { Redirect } from "react-router-dom";
 import Alert from "../../components/Alert";
+import { MusicEmoji, RunnerEmoji } from "../../components/Emojis";
 import { Header, Main } from "../../components/Layout";
 import {
   Library_Sync_Statuses_Enum,
@@ -177,17 +178,13 @@ function Runner({ spm = null }: { spm: number | null }) {
           if (active) {
             return (
               <div key={i} className="transform -scale-x-1">
-                <span role="img" aria-label="runner">
-                  🏃
-                </span>
+                <RunnerEmoji />
               </div>
             );
           }
           return (
             <div key={i} className="opacity-75">
-              <span role="img" aria-label="music note">
-                🎶
-              </span>
+              <MusicEmoji />
             </div>
           );
         })}
